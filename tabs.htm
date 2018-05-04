@@ -42,18 +42,6 @@
     </div>
   </div>
   <div id="shading" class="tab">
-    <div class="group">
-      <span class="group">
-	<label>Option 1</label>
-	<input name="option" type="radio" />
-	<span class="spacer"></span>
-	<label>Option 2</label>
-	<input name="option" type="radio" />
-      </span>
-      <span class="group">
-	<button type="button" disabled>This is a button</button>
-      </span>
-    </div>
   </div>
 </div>
 
@@ -80,29 +68,6 @@
   <label for="console">Console</label>
   <div id="console" class="group"></div>
 </div>
-
-<script type="text/javascript">
-  for (var i = 0; i < 20; i++) {
-      var label = i.toString();
-      if (label.length < 2) label = '0' + label;
-
-      $('#object-pane').append(`
-          <div id="object-pane-${i}" class="item">
-            <button type="button"><i class="fas fa-times"></i></button>
-            <code>${label}</code>
-            <button type="button">Red</button>
-            <button type="button">Green</button>
-            <button type="button">Blue</button>
-          </div>
-      `);
-  }
-
-  for (var i = 0; i < 20; i++) {
-      $('#console').append(`
-          <code>${i}: </code><br />
-      `);
-  }
-</script>
 
 #include "webgl-libs.htm"
 <script src="tabs.jsc"></script>
