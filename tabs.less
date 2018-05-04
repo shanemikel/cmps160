@@ -2,34 +2,50 @@
 @import "widgets.less";
 
 
-@tile-margin:                 10px;
-@tile-padding:                4px;
-@controls-vertical-width:     250px;
-@controls-horizontal-height:  150px;
+@tile-margin:             10px;
+@tile-padding:            4px;
+@controls-top-width:      calc(@controls-left-width + @tile-margin + 2 * @tile-padding
+                               + @webgl-width);
+@controls-top-height:     150px;
+@controls-left-width:     250px;
+@controls-left-height:    @webgl-height;
+@controls-bottom-width:   @controls-top-width;
+@controls-bottom-height:  250px;
 
-#controls-vertical
+.tile()
 {
-    .rounded();
-    
-    margin-right: @tile-margin;
-    width: @controls-vertical-width;
-    height: @webgl-height;
     background-color: @grey;
-
     overflow-y: scroll;
 }
 
-#controls-horizontal
+#controls-top
 {
     .rounded();
+    .tile();
 
     margin-bottom: @tile-margin;
-    width: calc(@controls-vertical-width + @tile-margin + 2 * @tile-padding
-                + @webgl-width);
-    height: @controls-horizontal-height;
-    background-color: @grey;
+    width: @controls-top-width;
+    height: @controls-top-height;
+}
 
-    overflow-y: scroll;
+#controls-left
+{
+    .rounded();
+    .tile();
+    
+    margin-right: @tile-margin;
+    width: @controls-left-width;
+    height: @controls-left-height;
+}
+
+#controls-bottom
+{
+    .rounded();
+    .tile();
+
+    margin-top: @tile-margin;
+    width: @controls-bottom-width;
+    height: @controls-bottom-height;
 }
 
 .rounded()
@@ -69,18 +85,20 @@
 @tile-color:                @grey;
 @text-color:                @light-grey;
 @widget-color:              darken(@grey, 8%);
-@highlight-color:           lighten(@grey, 10%);
+@highlight-color:           @dark-grey;
 @seperator-color:           darken(@grey, 5%);
 @disabled-widget-color:     lighten(@widget-color, 4%);
 @disabled-highlight-color:  darken(@highlight-color, 5%);
 
 @tab-space:                    1px;
-@tab-color:                    @black;
+@tab-color:                    @button-color;
+@tab-highlight-color:          @button-border-color;
 @tab-text-color:               darken(@current-tab-text-color, 15%);
-@tab-highlight-color:          @current-tab-highlight-color;
-@current-tab-color:            @tab-color;
+@current-tab-color:            @background-color;
+@current-tab-highlight-color:  @disabled-button-border-color;
 @current-tab-text-color:       @text-color;
-@current-tab-highlight-color:  @dark-grey;
+@tab-border-size:              3px;
+@tab-border-radius:            4px;
 
 .controls
 {
@@ -95,7 +113,7 @@
         {
             display: inline-block;
             position: relative;
-            top: -4px;
+            top: calc(-4px);
             padding: 8px;
 
             &:not(:last-child)
@@ -106,25 +124,22 @@
             color: @tab-text-color;
             background-color: @tab-color;
 
-            border-left: 4px outset;
-            border-bottom-left-radius: 4px;
-            border-bottom: 4px outset;
-            border-bottom-right-radius: 4px;
-            border-right: 4px outset;
+            border-left: @tab-border-size solid;
+            border-bottom: @tab-border-size solid;
+            border-right: @tab-border-size solid;
+
+            border-bottom-left-radius: @tab-border-radius;
+            border-bottom-right-radius: @tab-border-radius;
+
             border-color: @tab-highlight-color;
 
             font-family: @monospace-font;
 
             &.current
             {
-                font-weight: bold;
-
                 color: @current-tab-text-color;
                 background-color: @current-tab-color;
 
-                border-left: 4px inset;
-                border-bottom: 4px inset;
-                border-right: 4px inset;
                 border-color: @current-tab-highlight-color;
             }
         }
@@ -152,7 +167,7 @@
         &:not(:empty)
         {
             padding: 5px 0 5px 0;
-            border-bottom: 1px solid @seperator-color;
+            border-bottom: 2px solid @seperator-color;
             text-align: center;
             font-family: @monospace-font;
 
@@ -185,6 +200,6 @@
 
     span.group:not(:last-child)
     {
-        border-right: 1px solid @seperator-color;
+        border-right: 2px solid @seperator-color;
     }
 }

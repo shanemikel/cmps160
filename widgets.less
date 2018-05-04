@@ -28,7 +28,9 @@ code
 @button-color:                  @widget-color;
 @button-border-color:           @highlight-color;
 @disabled-button-color:         lighten(@button-color, 4%);
-@disabled-button-border-color:  darken(@button-border-color, 5%);
+@disabled-button-border-color:  lighten(@button-border-color, 8%);
+@button-border-size:            2px;
+@button-radius:                 3px;
 
 .button()
 {
@@ -36,7 +38,8 @@ code
     background-color: @button-color;
     font-family: @monospace-font;
 
-    border: 2px solid @button-border-color;
+    border: @button-border-size solid @button-border-color;
+    border-radius: @button-radius;
 }
 
 button
@@ -44,10 +47,10 @@ button
     .button();
 }
 
-button.disabled
+button[disabled]
 {
     background-color: @disabled-button-color;
-    border: 2px solid @disabled-button-border-color;
+    border: @button-border-size solid @disabled-button-border-color;
 }
 
 
@@ -62,35 +65,44 @@ input[type='file']
     &.disabled::-webkit-file-upload-button
     {
         background-color: @disabled-button-color;
-        border: 2px solid @disabled-button-border-color;
+        border: @button-border-size solid @disabled-button-border-color;
+        border-radius: @button-radius;
     }
 }
 
 
 @thumb-width:            12px;
-@thumb-height:           20px;
+@thumb-height:           24px;
 @thumb-color:            @highlight-color;
-@thumb-highlight-color:  lighten(@highlight-color, 8%);
+@thumb-highlight-color:  darken(@thumb-color, 5%);
 
 @track-width:         100px;
-@track-height:        20px;
+@track-height:        10px;
 @track-color:         @widget-color;
 @track-border-color:  @highlight-color;
 
 .track()
 {
+    border: 1px solid @track-border-color;
+    border-radius: 4px;
+
     width: @track-width;
     heght: @track-height;
+
+    background: @track-color;
     cursor: pointer;
-    animate: 0.2s;
 }
 
 .thumb()
 {
-    border: 2px solid @thumb-highlight-color;
+    vertical-align: middle;
+
+    border: @button-border-size solid @thumb-highlight-color;
+    border-radius: @button-radius;
+
     height: @thumb-height;
     width: @thumb-width;
-    border-radius: 2px;
+
     background: @thumb-color;
     cursor: pointer;
 }
@@ -99,8 +111,10 @@ input[type='file']
 input[type='range']
 {
     -webkit-appearance: none;
-    vertical-align: bottom;
     width: @track-width;
+    margin: calc((@thumb-height - @track-height) / 2);
+
+    background: @tile-color;
 
     &:focus
     {
@@ -109,16 +123,18 @@ input[type='range']
 
     &::-webkit-slider-runnable-track
     {
+        -webkit-appearance: none;
         .track();
-        border: 2px solid @track-border-color;
-        background: @track-color;
     }
 
     &::-webkit-slider-thumb
     {
-        .thumb();
         -webkit-appearance: none;
-        margin-top: (@track-height / 2) - (@thumb-height / 2);
+        .thumb();
+
+        @margin: calc((@track-height - @thumb-height) / 2);
+        margin-top: @margin;
+        margin-bottom: @margin;
     }
 }
 

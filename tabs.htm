@@ -13,7 +13,7 @@
 #include "head-end.htm"
 #include "body-start.htm"
 
-<div id="controls-horizontal" class="controls invisible-scrollbar">
+<div id="controls-top" class="controls invisible-scrollbar">
   <div class="tab-labels" data-default="controls-geometry">
     <label for="controls-objects">Objects</label>
     <label for="controls-geometry">Geometry</label>
@@ -51,7 +51,7 @@
 	<input name="option" type="radio" />
       </span>
       <span class="group">
-	<button type="button">This is a button</button>
+	<button type="button" disabled>This is a button</button>
       </span>
     </div>
   </div>
@@ -64,7 +64,7 @@
 </script>
 
 <div class="container">
-  <div id="controls-vertical" class="controls scrollbar">
+  <div id="controls-left" class="controls scrollbar">
     <label for="cylinder-controls">Cylinder Manager</label>
     <div id="cylinder-controls" class="group"></div>
     <label for="cylinder-controls">Cylinder Manager</label>
@@ -77,6 +77,8 @@
     </canvas>
   </div>
 </div>
+
+<div id="controls-bottom" class="controls scrollbar"></div>
 
 <script type="text/javascript">
   for (var i = 0; i < 15; i++) {
