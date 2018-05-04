@@ -1,0 +1,180 @@
+@import "palette.less";
+@import "widgets.less";
+
+
+@tile-margin:                 10px;
+@tile-padding:                4px;
+@controls-vertical-width:     250px;
+@controls-horizontal-height:  150px;
+
+#controls-vertical
+{
+    .rounded();
+    
+    margin-right: @tile-margin;
+    width: @controls-vertical-width;
+    height: @webgl-height;
+    background-color: @grey;
+
+    overflow-y: scroll;
+}
+
+#controls-horizontal
+{
+    .rounded();
+
+    margin-bottom: @tile-margin;
+    width: calc(@controls-vertical-width + @tile-margin + 2 * @tile-padding
+                + @webgl-width);
+    height: @controls-horizontal-height;
+    background-color: @grey;
+
+    overflow-y: scroll;
+}
+
+.rounded()
+{
+    border-radius: 8px;
+    padding: @tile-padding;
+}
+
+.container
+{
+    display: inline-flex;
+}
+
+@webgl-width:             500px;
+@webgl-height:            500px;
+@webgl-background-color:  @black;
+
+#g-webgl
+{
+    width: @webgl-width;
+    height: @webgl-height;
+    --background-color: @webgl-background-color;
+}
+
+#webgl-mask
+{
+    .rounded();
+
+    width: @webgl-width;
+    height: @webgl-height;
+    background-color: @webgl-background-color;
+    overflow: hidden;
+}
+
+
+@background-color:          @dark-grey;
+@tile-color:                @grey;
+@text-color:                @light-grey;
+@widget-color:              darken(@grey, 8%);
+@highlight-color:           lighten(@grey, 10%);
+@seperator-color:           darken(@grey, 5%);
+@disabled-widget-color:     lighten(@widget-color, 4%);
+@disabled-highlight-color:  darken(@highlight-color, 5%);
+
+@tab-color:                    @black;
+@tab-text-color:               darken(@current-tab-text-color, 15%);
+@tab-highlight-color:          @disabled-widget-color;
+@current-tab-color:            @tab-color;
+@current-tab-text-color:       @text-color;
+@current-tab-highlight-color:  @disabled-highlight-color;
+
+.controls
+{
+    & > .tab-labels
+    {
+        padding: 0 0 8px 25px;
+
+        border-bottom: 2px solid @seperator-color;
+        text-align: left;
+
+        & > label
+        {
+            display: inline-block;
+            position: relative;
+            top: -4px;
+            padding: 8px;
+
+            color: @tab-text-color;
+            background-color: @tab-color;
+
+            border-left: 2px solid;
+            border-bottom-left-radius: 5px;
+            border-bottom: 2px solid;
+            border-bottom-right-radius: 5px;
+            border-right: 2px solid;
+            border-color: @tab-highlight-color;
+
+            font-family: @proportional-font;
+
+            &.current
+            {
+                font-weight: bold;
+
+                color: @current-tab-text-color;
+                background-color: @current-tab-color;
+                border-color: @current-tab-highlight-color;
+            }
+        }
+    }
+
+    & > label
+    {
+        display: block;
+
+        padding: 2px 0 5px 0;
+        border-bottom: 2px solid @seperator-color;
+        text-align: center;
+        font-family: @proportional-font;
+    }
+
+    & > div.group + label
+    {
+        margin-top: 10px;
+        padding-top: 5px;
+        border-top: 2px solid @seperator-color;
+    }
+
+    div.group
+    {
+        &:not(:empty)
+        {
+            padding: 5px 0 5px 0;
+            border-bottom: 1px solid @seperator-color;
+            text-align: center;
+            font-family: @monospace-font;
+
+            &:not(:last-child)
+            {
+                border-bottom: none;
+            }
+        }
+
+        div.item
+        {
+            &:not(:first-child)
+            {
+                padding-top: 5px;
+            }
+
+            &:not(:last-child)
+            {
+                padding-bottom: 5px;
+                border-bottom: 1px solid @seperator-color;
+            }
+        }
+
+        span.group
+        {
+            margin: 0;
+            padding: 0 8px 0 10px;
+        }
+    }
+
+    span.group:not(:last-child)
+    {
+        border-right: 1px solid @seperator-color;
+    }
+}

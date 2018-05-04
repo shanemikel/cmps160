@@ -1,0 +1,100 @@
+#include "head-start.htm"
+
+<title>Assignment 4</title>
+
+#include "base-styles.htm"
+#include "font-awesome.htm"
+#include "jquery.htm"
+
+<meta name="viewport" content="width=device-width" />
+<meta id="g-colors" />
+<meta id="g-webgl" />
+<link href="tabs.css" rel="stylesheet" />
+#include "head-end.htm"
+#include "body-start.htm"
+
+<div id="controls-horizontal" class="controls invisible-scrollbar">
+  <div class="tab-labels" data-default="controls-geometry">
+    <label for="controls-objects">Objects</label>
+    <label for="controls-geometry">Geometry</label>
+    <label for="controls-shading">Shading</label>
+  </div>
+  <div id="controls-objects" class="tab">
+    <div class="group">
+      <span class="group">
+	<input type="file"></input>
+	<button type="button">Extract SOR</button>
+	<button type="button">Save</button>
+	<button type="button">Reset</button>
+      </span>
+    </div>
+  </div>
+  <div id="controls-geometry" class="tab">
+    <div class="group">
+      <span class="group">
+	Cylinder side-count
+	<input type="range"></input>
+      </span>
+      <span class="group">
+	Cylinder radius
+	<input type="range"></input>
+      </span>
+    </div>
+  </div>
+  <div id="controls-shading" class="tab">
+    <div class="group">
+      <span class="group">
+	<label>Option 1</label>
+	<input name="option" type="radio" />
+	<span class="spacer"></span>
+	<label>Option 2</label>
+	<input name="option" type="radio" />
+      </span>
+      <span class="group">
+	<button type="button">This is a button</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  $('.tab').each(function(i, elem) {
+      $(elem).prop('hidden', true);
+  });
+</script>
+
+<div class="container">
+  <div id="controls-vertical" class="controls scrollbar">
+    <label for="cylinder-controls">Cylinder Manager</label>
+    <div id="cylinder-controls" class="group"></div>
+    <label for="cylinder-controls">Cylinder Manager</label>
+    <div id="other-controls" class="group"></div>
+  </div>
+
+  <div id="webgl-mask">
+    <canvas id="webgl" oncontextmenu="return false;">
+      Please use a browser that supports "canvas"
+    </canvas>
+  </div>
+</div>
+
+<script type="text/javascript">
+  for (var i = 0; i < 15; i++) {
+      var label = i.toString();
+      if (label.length < 2) label = '0' + label;
+
+      $('#cylinder-controls').append(`
+          <div id="cylinder-control-${i}" class="item">
+            <button type="button"><i class="fas fa-times"></i></button>
+            <code>${label}</code>
+            <button type="button">Red</button>
+            <button type="button">Green</button>
+            <button type="button">Blue</button>
+          </div>
+      `);
+  }
+</script>
+
+#include "webgl-libs.htm"
+<script src="tabs.jsc"></script>
+#include "body-end.htm"

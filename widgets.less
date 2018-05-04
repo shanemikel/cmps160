@@ -1,0 +1,154 @@
+@monospace-font:     'Inconsolata', monospace;
+@proportional-font:  'Roboto Condensed', sans-serif;
+
+html
+{
+    touch-action: manipulation;
+}
+
+body
+{
+    background-color: @background-color;
+    margin: 15px 15px 15px 15px;
+}
+
+*
+{
+    color: @text-color;
+    font-family: @proportional-font;
+}
+
+pre,
+code
+{
+    font-family: @monospace-font;
+}
+
+
+@button-color:                  @widget-color;
+@button-border-color:           @highlight-color;
+@disabled-button-color:         lighten(@button-color, 4%);
+@disabled-button-border-color:  darken(@button-border-color, 5%);
+
+.button()
+{
+    padding: 2px 4px 2px 4px;
+    background-color: @button-color;
+    font-family: @monospace-font;
+
+    border: 2px solid @button-border-color;
+}
+
+button
+{
+    .button();
+}
+
+button.disabled
+{
+    background-color: @disabled-button-color;
+    border: 2px solid @disabled-button-border-color;
+}
+
+
+input[type='file']
+{
+    &::-webkit-file-upload-button
+    {
+        .button();
+        color: @text-color;
+    }
+
+    &.disabled::-webkit-file-upload-button
+    {
+        background-color: @disabled-button-color;
+        border: 2px solid @disabled-button-border-color;
+    }
+}
+
+
+@thumb-width:            12px;
+@thumb-height:           20px;
+@thumb-color:            @highlight-color;
+@thumb-highlight-color:  lighten(@highlight-color, 8%);
+
+@track-width:         100px;
+@track-height:        20px;
+@track-color:         @widget-color;
+@track-border-color:  @highlight-color;
+
+.track()
+{
+    width: @track-width;
+    heght: @track-height;
+    cursor: pointer;
+    animate: 0.2s;
+}
+
+.thumb()
+{
+    border: 2px solid @thumb-highlight-color;
+    height: @thumb-height;
+    width: @thumb-width;
+    border-radius: 2px;
+    background: @thumb-color;
+    cursor: pointer;
+}
+
+
+input[type='range']
+{
+    -webkit-appearance: none;
+    vertical-align: bottom;
+    width: @track-width;
+
+    &:focus
+    {
+        outline: none;
+    }
+
+    &::-webkit-slider-runnable-track
+    {
+        .track();
+        border: 2px solid @track-border-color;
+        background: @track-color;
+    }
+
+    &::-webkit-slider-thumb
+    {
+        .thumb();
+        -webkit-appearance: none;
+        margin-top: (@track-height / 2) - (@thumb-height / 2);
+    }
+}
+
+
+@scrollbar-color: @seperator-color;
+
+.scrollbar
+{
+    &::-webkit-scrollbar
+    {
+        background-color: @tile-color;
+        border-radius: 8px;
+        width: 10px;
+    }
+
+    &::-webkit-scrollbar-thumb
+    {
+        border-radius: 8px;
+        background: @scrollbar-color;
+    }
+}
+
+.invisible-scrollbar::-webkit-scrollbar
+{
+    display: none;
+}
+
+
+span.spacer
+{
+    display: inline-block;
+    --size: 5px;
+}
