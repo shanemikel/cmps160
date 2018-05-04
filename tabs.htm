@@ -13,13 +13,13 @@
 #include "head-end.htm"
 #include "body-start.htm"
 
-<div id="controls-top" class="controls invisible-scrollbar">
-  <div class="tab-labels" data-default="controls-geometry">
-    <label for="controls-objects">Objects</label>
-    <label for="controls-geometry">Geometry</label>
-    <label for="controls-shading">Shading</label>
+<div id="controls-top" class="controls">
+  <div class="tab-labels" data-default="shading">
+    <label for="objects">Objects</label>
+    <label for="geometry">Geometry</label>
+    <label for="shading">Shading</label>
   </div>
-  <div id="controls-objects" class="tab">
+  <div id="objects" class="tab">
     <div class="group">
       <span class="group">
 	<input type="file"></input>
@@ -29,7 +29,7 @@
       </span>
     </div>
   </div>
-  <div id="controls-geometry" class="tab">
+  <div id="geometry" class="tab">
     <div class="group">
       <span class="group">
 	Cylinder side-count
@@ -41,7 +41,7 @@
       </span>
     </div>
   </div>
-  <div id="controls-shading" class="tab">
+  <div id="shading" class="tab">
     <div class="group">
       <span class="group">
 	<label>Option 1</label>
@@ -63,12 +63,10 @@
   });
 </script>
 
-<div class="container">
-  <div id="controls-left" class="controls scrollbar">
-    <label for="cylinder-controls">Cylinder Manager</label>
-    <div id="cylinder-controls" class="group"></div>
-    <label for="cylinder-controls">Cylinder Manager</label>
-    <div id="other-controls" class="group"></div>
+<div class="flex-container">
+  <div id="controls-left" class="controls">
+    <label for="object-pane">Object Manager</label>
+    <div id="object-pane" class="group"></div>
   </div>
 
   <div id="webgl-mask">
@@ -78,21 +76,30 @@
   </div>
 </div>
 
-<div id="controls-bottom" class="controls scrollbar"></div>
+<div id="controls-bottom" class="controls">
+  <label for="console">Console</label>
+  <div id="console" class="group"></div>
+</div>
 
 <script type="text/javascript">
-  for (var i = 0; i < 15; i++) {
+  for (var i = 0; i < 20; i++) {
       var label = i.toString();
       if (label.length < 2) label = '0' + label;
 
-      $('#cylinder-controls').append(`
-          <div id="cylinder-control-${i}" class="item">
+      $('#object-pane').append(`
+          <div id="object-pane-${i}" class="item">
             <button type="button"><i class="fas fa-times"></i></button>
             <code>${label}</code>
             <button type="button">Red</button>
             <button type="button">Green</button>
             <button type="button">Blue</button>
           </div>
+      `);
+  }
+
+  for (var i = 0; i < 20; i++) {
+      $('#console').append(`
+          <code>${i}: </code><br />
       `);
   }
 </script>

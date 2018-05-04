@@ -1,15 +1,17 @@
 JS_SRC   = $(MAIN:=.js) $(JS_LIBS:=.js)
-LESS_SRC = features.less $(MAIN:=.less) $(LESS_LIBS:=.less)
-HTM_SRC  = features.htm $(MAIN:=.htm) $(HTM_LIBS:=.htm)
+LESS_SRC = $(MAIN:=.less) $(LESS_LIBS:=.less)
+HTM_SRC  = $(MAIN:=.htm) $(HTM_LIBS:=.htm)
 ALL_SRC  = $(JS_SRC) $(LESS_SRC) $(HTM_SRC)
 
 JS_OUT   = $(MAIN:=.jsc)
-LESS_OUT = features.css $(MAIN:=.css)
-HTM_OUT  = features.html $(MAIN:=.html)
+LESS_OUT = $(MAIN:=.css)
+HTM_OUT  = $(MAIN:=.html)
 ALL_OUT  = $(JS_OUT) $(LESS_OUT) $(HTM_OUT)
 
-.PHONY: all watch clean
-all: features.css features.html $(MAIN:=.jsc) $(MAIN:=.css) $(MAIN:=.html)
+DIST     = $(PROJECT).tar.gz
+
+.PHONY: all watch clean dist
+all: $(MAIN:=.jsc) $(MAIN:=.css) $(MAIN:=.html)
 
 $(MAIN:=.jsc): %: $(JS_LIBS:=.js)
 features.css $(MAIN:=.css): %: $(LESS_LIBS:=.less)
@@ -20,7 +22,12 @@ watch:
 	./watch.sh $(addprefix -f ,$(ALL_SRC)) -- $(MAKE) -s all
 
 clean:
-	rm -f $(ALL_OUT)
+	rm -f $(ALL_OUT) $(DIST)
+
+dist: $(DIST)
+
+$(DIST): $(ALL_OUT)
+	tar --xform "s/^/$(PROJECT)\//" -czf $@ $(ALL_OUT)
 
 %.jsc: %.js
 	cpp -P -C -traditional-cpp -nostdinc $< $@

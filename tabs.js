@@ -110,7 +110,7 @@ function render_grid(gl, color) {
     render_lines(gl, 2, vertices, color);
 
     vertices = [];
-    var tick_length = 0.02;
+    var tick_length = 0.5;
     var tick_space  = 0.1;
     for (var i = 1; i <= 2 / tick_space - 1; i++) {
         var tick = i * tick_space - 1;

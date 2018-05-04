@@ -139,13 +139,12 @@ input[type='range']
 }
 
 
-@scrollbar-color: @seperator-color;
-
-.scrollbar
+.scrollbar(@background-color: @tile-color;
+           @foreground-color: lighten(@tile-color, 10%))
 {
     &::-webkit-scrollbar
     {
-        background-color: @tile-color;
+        background-color: @background-color;
         border-radius: 8px;
         width: 10px;
     }
@@ -153,13 +152,16 @@ input[type='range']
     &::-webkit-scrollbar-thumb
     {
         border-radius: 8px;
-        background: @scrollbar-color;
+        background: @foreground-color;
     }
 }
 
-.invisible-scrollbar::-webkit-scrollbar
+.invisible-scrollbar()
 {
-    display: none;
+    &::-webkit-scrollbar
+    {
+        display: none;
+    }
 }
 
 

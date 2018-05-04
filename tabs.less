@@ -6,23 +6,24 @@
 @tile-padding:            4px;
 @controls-top-width:      calc(@controls-left-width + @tile-margin + 2 * @tile-padding
                                + @webgl-width);
-@controls-top-height:     150px;
+@controls-top-height:     200px;
 @controls-left-width:     250px;
 @controls-left-height:    @webgl-height;
 @controls-bottom-width:   @controls-top-width;
-@controls-bottom-height:  250px;
+@controls-bottom-height:  225px;
+@console-height:          calc(@controls-bottom-height - 45px);
 
 .tile()
 {
+    .rounded();
     background-color: @grey;
     overflow-y: scroll;
 }
 
 #controls-top
 {
-    .rounded();
     .tile();
-
+    .invisible-scrollbar();
     margin-bottom: @tile-margin;
     width: @controls-top-width;
     height: @controls-top-height;
@@ -30,9 +31,8 @@
 
 #controls-left
 {
-    .rounded();
     .tile();
-    
+    .scrollbar();
     margin-right: @tile-margin;
     width: @controls-left-width;
     height: @controls-left-height;
@@ -40,12 +40,26 @@
 
 #controls-bottom
 {
-    .rounded();
     .tile();
-
+    .invisible-scrollbar();
     margin-top: @tile-margin;
     width: @controls-bottom-width;
     height: @controls-bottom-height;
+}
+
+#console
+{
+    .rounded();
+
+    @background: @black;
+    overflow-y: scroll;
+    .scrollbar(@background);
+    background: @background;
+
+    height: @console-height;
+
+    margin-top: 5px;
+    text-align: left;
 }
 
 .rounded()
@@ -54,7 +68,7 @@
     padding: @tile-padding;
 }
 
-.container
+.flex-container
 {
     display: inline-flex;
 }
@@ -93,8 +107,8 @@
 @tab-space:                    1px;
 @tab-color:                    @button-color;
 @tab-highlight-color:          @button-border-color;
-@tab-text-color:               darken(@current-tab-text-color, 15%);
-@current-tab-color:            @background-color;
+@tab-text-color:               @text-color;
+@current-tab-color:            @black;
 @current-tab-highlight-color:  @disabled-button-border-color;
 @current-tab-text-color:       @text-color;
 @tab-border-size:              3px;
