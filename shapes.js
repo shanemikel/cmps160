@@ -5,75 +5,23 @@
 
 #define ORIGIN (new Vector(0.0, 0.0, 0.0))
 
-
-var Vector = function(x, y, z) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
-};
-
-Vector.prototype = {
-    toList: function() {
-        return [this.x, this.y, this.z];
-    },
-
-    copy: function() {
-        return new Vector(this.x, this.y, this.z);
-    },
-};
-
-var RGBColor = function(r, g, b) {
-    this.r = r;
-    this.g = g;
-    this.b = b;
-};
-
-RGBColor.prototype = {
-    toList: function() {
-        return [this.r, this.g, this.b];
-    },
-
-    copy: function() {
-        return new RGBColor(this.r, this.g, this.b);
-    },
-};
-
-RGBColor.fromHex = function(hex) {
-    /**  Converts a hex format color (as a string), to an RGBColor
-     *
-     *   'hexToRgb' function copied from 'https://stackoverflow.com/questions/5623838'
-     */
-    var hexToRgb = function(hex) {
-        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result ? {
-            r: parseInt(result[1], 16),
-            g: parseInt(result[2], 16),
-            b: parseInt(result[3], 16)
-        } : null;
-    };
-    var rgb = hexToRgb(hex.trim());
-    rgb = new RGBColor(rgb.r / 255, rgb.g / 255, rgb.b / 255);
-    return rgb;
-};
-
-
-var Polyline = function(color) {
+let Polyline = function(color) {
     this.color  = color ? color.copy() : WHITE.copy();
     this.points = [];
 };
 
 Polyline.prototype = {
     addPoint: function(x, y) {
-        this.points.push(new Vector([x, y, 0.0]));
+        this.points.push(new Vector(x, y, 0.0));
     },
     getPoints: function(mouseXY) {
-        var res = [];
+        let res = [];
 
-        for (var i = 0; i < this.points.length; i++)
+        for (let i = 0; i < this.points.length; i++)
             res.push(this.points[i].copy());
 
         if (mouseXY !== undefined)
-            res.push(new Vector([mouseXY[0], mouseXY[1], 0.0]));
+            res.push(new Vector(mouseXY[0], mouseXY[1], 0.0));
 
         return res;
     },
@@ -87,7 +35,7 @@ Polyline.prototype = {
 };
 
 
-var Polylines = function(color) {
+let Polylines = function(color) {
     this.count   = 0;
     this.lines   = [];
     this.current = new Polyline(color);
@@ -95,7 +43,7 @@ var Polylines = function(color) {
 
 Polylines.prototype = {
     insert: function(polyline) {
-        var i = 0;
+        let i = 0;
         for (; i < this.lines.length; i++) {
             if (this.lines[i] === undefined)
                 break;
@@ -106,7 +54,7 @@ Polylines.prototype = {
         return i;
     },
     makeNew: function(color) {
-        var i = this.insert(this.current);
+        let i = this.insert(this.current);
         this.current = new Polyline(color);
         return i;
     },
@@ -115,7 +63,7 @@ Polylines.prototype = {
         return this.lines[i];
     },
     map: function(cb) {
-        for (var i = 0; i < this.lines.length; i++)
+        for (let i = 0; i < this.lines.length; i++)
             if (this.lines[i] !== undefined)
                 cb(i, this.lines[i]);
     },
@@ -126,7 +74,7 @@ Polylines.prototype = {
 };
 
 
-var Circle = function(center, radius) {
+let Circle = function(center, radius) {
     this.center = center.copy();
     this.radius = radius;
 };
@@ -147,16 +95,17 @@ Circle.prototype = {
     },
 
     toPolygon: function(sides) {
-        var sliceAngle = 2 * Math.PI / sides;
+        let sliceAngle = 2 * Math.PI / sides;
 
-        var res = [];
-        for (var i = 0; i < sides; i++) {
+        let res = [];
+        for (let i = 0; i < sides; i++) {
+            let x, y;
             if (sides % 2 == 0) {  // 'sides' is even
-                var x = this.radius * Math.cos(i * sliceAngle);
-                var y = this.radius * Math.sin(i * sliceAngle);
+                x = this.radius * Math.cos(i * sliceAngle);
+                y = this.radius * Math.sin(i * sliceAngle);
             } else {
-                var y = this.radius * Math.cos(i * sliceAngle);
-                var x = this.radius * Math.sin(i * sliceAngle);
+                y = this.radius * Math.cos(i * sliceAngle);
+                x = this.radius * Math.sin(i * sliceAngle);
             }
             res[i] = new Vector(
                 this.center.x + x, this.center.y + y, this.center.z
@@ -166,42 +115,43 @@ Circle.prototype = {
     },
 
     toFrame: function(sides) {
-        var res = {
+        let obj = {
             vertices: [this.center.copy()].concat(this.toPolygon(sides)),
             indices:  [],
         };
-        for (var i = 1; i < res.vertices.length; i++) {
-            var i2 = i + 1;
-            if (i2 == res.vertices.length)
+        for (let i = 1; i < obj.vertices.length; i++) {
+            let i2 = i + 1;
+            if (i2 == obj.vertices.length)
                 i2 = 1;
-            res.indices.push(0.0);
-            res.indices.push(i);
-            res.indices.push(i);
-            res.indices.push(i2);
+            obj.indices.push(0.0);
+            obj.indices.push(i);
+            obj.indices.push(i);
+            obj.indices.push(i2);
         }
-        return res;
+        return obj;
     },
 
     toTrigs: function(sides) {
-        var res = {
+        let obj = {
             vertices: [this.center.copy()].concat(this.toPolygon(sides)),
             indices:  [],
         };
-        for (var i = 1; i < res.vertices.length; i++) {
-            var i2 = i + 1;
-            if (i2 == res.vertices.length)
+        for (let i = 1; i < obj.vertices.length; i++) {
+            let i2 = i + 1;
+            if (i2 == obj.vertices.length)
                 i2 = 1;
-            res.indices.push(0);
-            res.indices.push(i);
-            res.indices.push(i2);
+            obj.indices.push(0);
+            obj.indices.push(i);
+            obj.indices.push(i2);
         }
-        return res;
+        return obj;
     },
 };
 
-var Cylinder = function(end1, end2, color) {
-    this.end1  = end1.copy();
-    this.end2  = end2.copy();
+let Cylinder = function(end1, end2, radius, color) {
+    this.end1   = end1.copy();
+    this.end2   = end2.copy();
+    this.radius = radius;
 
     if (color !== undefined)
         this.color = color.copy();
@@ -217,161 +167,107 @@ Cylinder.prototype = {
         this.color = color.copy();
     },
 
-    toFrame: function(sides, radius) {
-        var deltaX = this.end2.x - this.end1.x;
-        var deltaY = this.end2.y - this.end1.y;
-
-        var c1 = new Circle(ORIGIN, radius);
-        var c2 = new Circle(ORIGIN, radius);
-
-        var rotate = (new Matrix()).rotateY(Math.PI / 2)
-                                   .rotateZ(-Math.atan(deltaY / deltaX));
-        var xform1 = rotate.translate(this.end1);
-        var xform2 = rotate.translate(this.end2);
-
-        var c1_vertices = c1.toFrame(sides).vertices
-                            .map(v => xform1.multiply(v));
-        var c2_vertices = c2.toFrame(sides).vertices
-                            .map(v => xform2.multiply(v));
-
-        var polygon1_vertices = c1.toPolygon(sides).map(v => xform1.multiply(v));
-        var polygon2_vertices = c2.toPolygon(sides).map(v => xform2.multiply(v));
-        
-        var bridge = [];
-        for (var i = 0; i < polygon1_vertices.length; i++) {
-            var i2 = (i + 1) % polygon1_vertices.length;
-            bridge.push(polygon1_vertices[i]);
-            bridge.push(polygon2_vertices[i]);
-            bridge.push(polygon2_vertices[i]);
-            bridge.push(polygon1_vertices[i2]);
-        }
-
-        return c1_vertices.concat(c2_vertices).concat(bridge);
+    getRadius: function() {
+        return this.radius;
+    },
+    setRadius: function(radius) {
+        this.radius = radius;
     },
 
-    // toFrame: function(sides, radius) {
-    //     var deltaX = this.end2.x - this.end1.x;
-    //     var deltaY = this.end2.y - this.end1.y;
-
-    //     var c1 = new Circle(ORIGIN, radius);
-    //     var c2 = new Circle(ORIGIN, radius);
-
-    //     var rotate = (new Matrix()).rotateY(Math.PI / 2)
-    //                                .rotateZ(-Math.atan(deltaY / deltaX));
-    //     var xform1 = rotate.translate(this.end1);
-    //     var xform2 = rotate.translate(this.end2);
-
-    //     var c1_vertices = c1.toFrame(sides).vertices
-    //                         .map(v => xform1.multiply(v));
-    //     var c2_vertices = c2.toFrame(sides).vertices
-    //                         .map(v => xform2.multiply(v));
-
-    //     var polygon1_vertices = c1.toPolygon(sides).map(v => xform1.multiply(v));
-    //     var polygon2_vertices = c2.toPolygon(sides).map(v => xform2.multiply(v));
-        
-    //     var bridge = [];
-    //     for (var i = 0; i < polygon1_vertices.length; i++) {
-    //         var i2 = (i + 1) % polygon1_vertices.length;
-    //         bridge.push(polygon1_vertices[i]);
-    //         bridge.push(polygon2_vertices[i]);
-    //         bridge.push(polygon2_vertices[i]);
-    //         bridge.push(polygon1_vertices[i2]);
-    //     }
-
-    //     return c1_vertices.concat(c2_vertices).concat(bridge);
-    // },
-
-    toTrigs: function(sides, radius) {
-        var deltaX = this.end2.x - this.end1.x;
-        var deltaY = this.end2.y - this.end1.y;
-
-        var c1 = new Circle(ORIGIN, radius);
-        var c2 = new Circle(ORIGIN, radius);
-
-        var rotate = (new Matrix()).rotateY(Math.PI / 2)
-                                   .rotateZ(-Math.atan(deltaY / deltaX));
-        var xform1 = rotate.translate(this.end1);
-        var xform2 = rotate.translate(this.end2);
-
-        var c1_vertices = c1.toTrigs(sides).map(v => xform1.multiply(v));
-        var c2_vertices = c2.toTrigs(sides).map(v => xform2.multiply(v));;
-
-        var polygon1_vertices = c1.toPolygon(sides).map(v => xform1.multiply(v));
-        var polygon2_vertices = c2.toPolygon(sides).map(v => xform2.multiply(v));
-        
-        var bridge = [];
-        for (var i = 0; i < polygon1_vertices.length; i++) {
-            var i2 = (i + 1) % polygon1_vertices.length;
-            bridge.push(polygon1_vertices[i]);
-            bridge.push(polygon2_vertices[i]);
-            bridge.push(polygon1_vertices[i2]);
-            bridge.push(polygon2_vertices[i]);
-            bridge.push(polygon1_vertices[i2]);
-            bridge.push(polygon2_vertices[i2]);
+    bridgeFrameIndices: function(sides) {
+        let indices = [];
+        for (let i = 1; i < sides + 1; i++) {
+            let i2 = i + 1;
+            if (i2 == sides + 1)
+                i2 = 1;
+            indices.push({end: 1, index: i});
+            indices.push({end: 2, index: i});
+            indices.push({end: 2, index: i});
+            indices.push({end: 1, index: i2});
         }
-
-        return c1_vertices.concat(c2_vertices).concat(bridge);
+        return indices;
     },
 
-    // toTrigs: function(sides, radius) {
-    //     var deltaX = this.end2.x - this.end1.x;
-    //     var deltaY = this.end2.y - this.end1.y;
+    bridgeTrigsIndices: function(sides) {
+        let indices = [];
+        for (let i = 1; i < sides + 1; i++) {
+            let i2 = i + 1;
+            if (i2 == sides + 1)
+                i2 = 1;
+            indices.push({end: 1, index: i});
+            indices.push({end: 2, index: i});
+            indices.push({end: 1, index: i2});
+            indices.push({end: 2, index: i});
+            indices.push({end: 1, index: i2});
+            indices.push({end: 2, index: i2});
+        }
+        return indices;
+    },
 
-    //     var c1 = new Circle(ORIGIN, radius);
-    //     var c2 = new Circle(ORIGIN, radius);
+    toObj: function(circleObjFn, bridgeIndicesFn, sides) {
+        let obj = {
+            vertices: [],
+            indices:  []
+        };
 
-    //     var rotate = (new Matrix()).rotateY(Math.PI / 2)
-    //                                .rotateZ(-Math.atan(deltaY / deltaX));
-    //     var xform1 = rotate.translate(this.end1);
-    //     var xform2 = rotate.translate(this.end2);
+        let c1_obj   = new Circle(this.end1, this.radius)[circleObjFn](sides);
+        let c2_obj   = new Circle(this.end2, this.radius)[circleObjFn](sides);
+        let c1_start = 0;
+        let c2_start = c1_obj.vertices.length;
 
-    //     var c1_vertices = c1.toTrigs(sides).map(v => xform1.multiply(v));
-    //     var c2_vertices = c2.toTrigs(sides).map(v => xform2.multiply(v));;
+        obj.indices = obj.indices.concat(c1_obj.indices);
+        obj.indices = obj.indices.concat(c2_obj.indices.map(i => i + c2_start));
+        {
+            let indices  = this[bridgeIndicesFn](sides).map(function(i) {
+                switch (i.end) {
+                case 1:
+                    return i.index + c1_start;
+                    break;
+                case 2:
+                    return i.index + c2_start;
+                    break;
+                }
+            });
+            obj.indices = obj.indices.concat(indices);
+        }
 
-    //     var polygon1_vertices = c1.toPolygon(sides).map(v => xform1.multiply(v));
-    //     var polygon2_vertices = c2.toPolygon(sides).map(v => xform2.multiply(v));
-        
-    //     var bridge = [];
-    //     for (var i = 0; i < polygon1_vertices.length; i++) {
-    //         var i2 = (i + 1) % polygon1_vertices.length;
-    //         bridge.push(polygon1_vertices[i]);
-    //         bridge.push(polygon2_vertices[i]);
-    //         bridge.push(polygon1_vertices[i2]);
-    //         bridge.push(polygon2_vertices[i]);
-    //         bridge.push(polygon1_vertices[i2]);
-    //         bridge.push(polygon2_vertices[i2]);
-    //     }
+        let m_rot;
+        {
+            var dir = this.end2.sub(this.end1).unit();
+            m_rot   = new Matrix();
+            m_rot   = m_rot.rotateY(Radians.fromDegrees(90));
+            m_rot   = m_rot.rotateZ(-Math.atan(dir.y / dir.x));
+        }
 
-    //     return c1_vertices.concat(c2_vertices).concat(bridge);
-    // },
+        {
+            let xform1      = v => m_rot.translate(this.end1).multiply(v);
+            let c1_vertices = c1_obj.vertices.map(xform1);
+            let xform2      = v => m_rot.translate(this.end2).multiply(v);
+            let c2_vertices = c2_obj.vertices.map(xform2);
 
-    // normals: function(sides, radius) {
-    //     var trigs = this.toTrigs(sides, radius);
+            obj.vertices = obj.vertices.concat(c1_vertices);
+            obj.vertices = obj.vertices.concat(c2_vertices);
+        }
+        return obj;
+    },
 
-    //     var res = [];
-    //     for (var i = 0; i < trigs.length / 3; i++) {
-    //         var trig0 = trigs[3 * i];
-    //         var trig1 = trigs[3 * i + 1];
-    //         var trig2 = trigs[3 * i + 2];
+    toFrame: function(sides) {
+        return this.toObj('toFrame', 'bridgeFrameIndices', sides);
+    },
 
-    //         var vec1 = vector_sub(trig1, trig0);
-    //         var vec2 = vector_sub(trig2, trig0);
-
-    //         var normal = normalize(cross_product(vec1, vec2));
-    //         res.push(normal);
-    //     }
-    //     return res;
-    // },
+    toTrigs: function(sides) {
+        return this.toObj('toTrigs', 'bridgeTrigsIndices', sides);
+    },
 };
 
-var Cylinders = function() {
+let Cylinders = function() {
     this.count     = 0;
     this.cylinders = [];
 };
 
 Cylinders.prototype = {
     insert: function(cylinder) {
-        var i = 0;
+        let i = 0;
         for (; i < this.cylinders.length; i++) {
             if (this.cylinders[i] === undefined)
                 break;
@@ -386,7 +282,7 @@ Cylinders.prototype = {
         return this.cylinders[i];
     },
     map: function(cb) {
-        for (var i = 0; i < this.cylinders.length; i++)
+        for (let i = 0; i < this.cylinders.length; i++)
             if (this.cylinders[i] !== undefined)
                 cb(i, this.cylinders[i]);
     },
@@ -398,34 +294,125 @@ Cylinders.prototype = {
 };
 
 
-var Matrix = function() {
+let Vector = function(x, y, z) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+};
+
+Vector.prototype = {
+    magnitude: function() {
+        return Math.sqrt(
+            Math.pow(this.x, 2) + Math.pow(this.y, 2) + Math.pow(this.z, 2)
+        );
+    },
+    unit: function() {
+        /**  @return the unit-vector with direction of this
+         */
+        let len = this.magnitude();
+        return new Vector(this.x / len, this.y / len, this.z / len);
+    },
+
+    scale: function(scalar) {
+        /**  @param scalar a Number to scale this Vector by
+         *   @return a Vector
+         */
+        return new Vector(scalar * this.x, scalar * this.y, scalar * this.z);
+    },
+
+    add: function(that) {
+        /**  @param that another Vector to add to this
+         *   @return a Vector
+         */
+        return new Vector(this.x + that.x, this.y + that.y, this.z + that.z);
+    },
+
+    sub: function(that) {
+        /**  @param that another Vector to subtract from this (RHS)
+         *   @return a Vector
+         */
+        return new Vector(this.x - that.x, this.y - that.y, this.z - that.z);
+    },
+
+    dot: function(that) {
+        /**  @param that another Vector to dot with this
+         *   @return a Number
+         */
+        return this.x * that.x + this.y * that.y + this.z * that.z;
+    },
+
+    cross: function(that) {
+        /**  @param that another Vector to cross this with (RHS)
+         *   @return a Vector
+         */
+        return new Vector(
+            this.y * that.z - this.z * that.y,
+            this.z * that.x - this.x * that.z,
+            this.x * that.y - this.y * that.x
+        );
+    },
+
+    toList: function() {
+        return [this.x, this.y, this.z];
+    },
+
+    copy: function() {
+        return new Vector(this.x, this.y, this.z);
+    },
+};
+
+Vector.flatten = function(arr) {
+    /**  @param arr an Array of Vectors
+     *   @return a Float32Array (with length: 3 * arr.length)
+     */
+    let res = new Float32Array(arr.length * 3);
+    for (let i = 0; i < arr.length; i++) {
+        res[3 * i + 0] = arr[i].x;
+        res[3 * i + 1] = arr[i].y;
+        res[3 * i + 2] = arr[i].z;
+    }
+    return res;
+};
+
+
+let Matrix = function() {
     /**  Construct a 4x4 identity matrix stored as a row-major Float32Array
      */
     this.data = new Float32Array(4 * 4);
-    for (var i = 0; i < 4; i++)
+    for (let i = 0; i < 4; i++)
         this.data[4 * i + i] = 1;
 };
 
 Matrix.prototype = {
     scale: function(scalar) {
-        var mat = new Matrix();
-        for (var i = 0; i < 3; i++)
+        /**  @param scalar a Number
+         *   @return a Matrix
+         */
+        let mat = new Matrix();
+        for (let i = 0; i < 3; i++)
             mat.data[4 * i + i] = scalar;
 
         return mat.multiply(this);
     },
 
     translate: function(vector) {
-        var mat = new Matrix();
-        for (var i = 0; i < 3; i++)
-            mat.data[4 * i + 3] = vector[i];
+        /**  @param vector a Vector
+         *   @return a Matrix
+         */
+        let mat = new Matrix();
+        mat.data[4 * 0 + 3] = vector.x;
+        mat.data[4 * 1 + 3] = vector.y;
+        mat.data[4 * 2 + 3] = vector.z;
 
         return mat.multiply(this);
     },
 
     rotateX: function(radians) {
-        var mat = new Matrix();
-        var row = 0;
+        /**  @param radians the angle (in radians) to rotate around the X axis
+         *   @return a rotation Matrix
+         */
+        let mat = new Matrix();
+        let row = 0;
         mat.data[4 * row + 0] = 1;
         mat.data[4 * row + 1] = 0;
         mat.data[4 * row + 2] = 0;
@@ -441,6 +428,9 @@ Matrix.prototype = {
     },
 
     rotateY: function(radians) {
+        /**  @param radians the angle (in radians) to rotate around the Y axis
+         *   @return a rotation Matrix
+         */
         var mat = new Matrix();
         var row = 0;
         mat.data[4 * row + 0] = Math.cos(radians);
@@ -458,6 +448,9 @@ Matrix.prototype = {
     },
 
     rotateZ: function(radians) {
+        /**  @param radians the angle (in radians) to rotate around the Z axis
+         *   @return a rotation Matrix
+         */
         var mat = new Matrix();
         var row = 0;
         mat.data[4 * row + 0] = Math.cos(radians);
@@ -475,10 +468,11 @@ Matrix.prototype = {
     },
 
     multiply: function(other) {
-        /**  Multiply a 4x4 matrix by a 3-vector or another 4x4 Matrix
-         *   @param other either a matrix or vector
+        /**  Multiply a Matrix by a Vector or another Matrix
+         *   @param other either a Matrix or Vector
+         *   @return either a Matrix or a Vector 
          */
-        if (other.data === undefined) {  // other is a 3-vector (as Array)
+        if (other.data === undefined) {  // other is a Vector
             other = [other.x, other.y, other.z, 1.0];
             var res = [0.0, 0.0, 0.0, 0.0];
 
@@ -491,9 +485,9 @@ Matrix.prototype = {
 
             for (var i = 0; i < 3; i++)
                 res[i] /= res[3];
-            return new Vector(res.x, res.y, res.z);
+            return new Vector(res[0], res[1], res[2]);
 
-        } else {                         // other is a 4x4 matrix
+        } else {                         // other is a Matrix
             var res  = new Matrix();
             res.data = new Float32Array(4 * 4);
 
@@ -509,4 +503,51 @@ Matrix.prototype = {
             return res;
         }
     },
+};
+
+Matrix.perspective = function() {
+};
+
+
+let Radians = {
+    fromDegrees: function(degrees) {
+        return degrees * Math.PI / 180;
+    },
+};
+
+
+let RGBColor = function(r, g, b) {
+    this.r = r;
+    this.g = g;
+    this.b = b;
+};
+
+RGBColor.prototype = {
+    toList: function() {
+        return [this.r, this.g, this.b];
+    },
+
+    copy: function() {
+        return new RGBColor(this.r, this.g, this.b);
+    },
+};
+
+RGBColor.fromHex = function(hex) {
+    /**  Converts a hexadecimal color to an RGBColor
+     *   @param hex a hexadecimal color value as a string of the form '#rrggbb'
+     *   @return an RGBColor
+     *   
+     */
+    // 'hexToRgb' function copied from 'https://stackoverflow.com/questions/5623838'
+    let hexToRgb = function(hex) {
+        let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
+    };
+    let rgb = hexToRgb(hex.trim());
+    rgb = new RGBColor(rgb.r / 255, rgb.g / 255, rgb.b / 255);
+    return rgb;
 };

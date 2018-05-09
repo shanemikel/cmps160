@@ -147,8 +147,6 @@
 
             border-color: @tab-highlight-color;
 
-            font-family: @monospace-font;
-
             &.current
             {
                 color: @current-tab-text-color;
@@ -184,11 +182,6 @@
             border-bottom: 2px solid @seperator-color;
             text-align: center;
             font-family: @monospace-font;
-
-            &:not(:last-child)
-            {
-                border-bottom: none;
-            }
         }
 
         div.item
@@ -216,4 +209,11 @@
     {
         border-right: 2px solid @seperator-color;
     }
+}
+
+#geometry span.left-label
+{
+    display: inline-block;
+    text-align: left;
+    width: 70px;
 }

@@ -2,39 +2,45 @@
 #include "util.js"
 
 
-let WHITE       = null;
-let BLACK       = null;
-let RED         = null;
-let GREEN       = null;
-let BLUE        = null;
-let GREY        = null;
-let DARK_GREY   = null;
-let LIGHT_GREY  = null;
+let WHITE            = null;
+let BLACK            = null;
+let RED              = null;
+let GREEN            = null;
+let BLUE             = null;
+let GREY             = null;
+let DARK_GREY        = null;
+let LIGHT_GREY       = null;
 
-let g_canvas = null;
+let CANVAS           = null;
+let WIDTH            = null;
+let HEIGHT           = null;
+let COLOR            = null;
 
-let WIDTH  = null;
-let HEIGHT = null;
-let COLOR  = null;
+let ROTATE_X         = null;
+let ROTATE_Y         = null;
+let ROTATE_Z         = null;
+let TRANSLATE_X      = null;
+let TRANSLATE_Y      = null;
+let TRANSLATE_Z      = null;
 
 
 function init() {
-    WHITE       = RGBColor.fromHex($('#g-colors').css('--white'));
-    BLACK       = RGBColor.fromHex($('#g-colors').css('--black'));
-    RED         = RGBColor.fromHex($('#g-colors').css('--red'));
-    GREEN       = RGBColor.fromHex($('#g-colors').css('--green'));
-    BLUE        = RGBColor.fromHex($('#g-colors').css('--blue'));
-    GREY        = RGBColor.fromHex($('#g-colors').css('--grey'));
-    DARK_GREY   = RGBColor.fromHex($('#g-colors').css('--dark-grey'));
-    LIGHT_GREY  = RGBColor.fromHex($('#g-colors').css('--light-grey'));
+    LOAD_CSS_COLOR(WHITE      , '--white')
+    LOAD_CSS_COLOR(BLACK      , '--black')
+    LOAD_CSS_COLOR(RED        , '--red')
+    LOAD_CSS_COLOR(GREEN      , '--green')
+    LOAD_CSS_COLOR(BLUE       , '--blue')
+    LOAD_CSS_COLOR(GREY       , '--grey')
+    LOAD_CSS_COLOR(DARK_GREY  , '--dark-grey')
+    LOAD_CSS_COLOR(LIGHT_GREY , '--light-grey')
 
     WIDTH  = $('#g-webgl').css('width');
     HEIGHT = $('#g-webgl').css('height');
     COLOR  = RGBColor.fromHex($('#g-webgl').css('--background-color'));
 
-    g_canvas = $('#webgl');
-    g_canvas.attr('width'  , WIDTH);
-    g_canvas.attr('height' , HEIGHT);
+    CANVAS = $('#webgl');
+    CANVAS.attr('width'  , WIDTH);
+    CANVAS.attr('height' , HEIGHT);
 
     $('span.spacer').each(function(i, elem) {
         let e = $(elem);
@@ -51,6 +57,7 @@ function init() {
             $(elem).click(() => set_current_tab(e, label_for));
         });
     });
+
 }
 
 function set_current_tab(tabs_elem, label_for) {
@@ -68,13 +75,13 @@ function set_current_tab(tabs_elem, label_for) {
         else
             e.prop('hidden', false);
     });
-};
+}
 
 
 function main() {
     init();
 
-    let gl = getWebGLContext(g_canvas[0]);
+    let gl = getWebGLContext(CANVAS[0]);
     if (! gl) {
         console.log('Failed to get the rendering context for WebGL');
         return;
@@ -84,141 +91,36 @@ function main() {
 }
 
 function start(gl) {
-    if (! initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
-        console.log('Failed to intialize shaders.');
-        return;
-    }
+    INIT_ROTATE_SLIDER(ROTATE_X, 'rotate-x', update(gl))
+    INIT_ROTATE_SLIDER(ROTATE_Y, 'rotate-y', update(gl))
+    INIT_ROTATE_SLIDER(ROTATE_Z, 'rotate-z', update(gl))
 
-    setup_callbacks(gl);
-    render(gl);
+    INIT_TRANSLATE_SLIDER(TRANSLATE_X, 'translate-x', update(gl))
+    INIT_TRANSLATE_SLIDER(TRANSLATE_Y, 'translate-y', update(gl))
+    INIT_TRANSLATE_SLIDER(TRANSLATE_Z, 'translate-z', update(gl))
+
+    update(gl);
 }
 
-function setup_callbacks(gl) {}
+function update(gl) {
+    let xform = new Matrix();
+    xform     = xform.rotateX(Radians.fromDegrees(ROTATE_X));
+    xform     = xform.rotateY(Radians.fromDegrees(ROTATE_Y));
+    xform     = xform.rotateZ(Radians.fromDegrees(ROTATE_Z));
+    // xform     = xform.translate(new Vector(TRANSLATE_X, TRANSLATE_Y, TRANSLATE_Z));
 
+    render(gl, xform);
+}
 
-function render(gl, mouse_xy) {
+function render(gl, xform, mouse_xy) {
     clear(gl, COLOR);
 
     render_grid(gl, DARK_GREY);
 
-    render_test(gl);
-
-    // let o1 = (new Circle(ORIGIN, 0.5)).toTrigs(4);
-    // console.log(o1);
-    // render_obj(gl, gl.LINES, o1);
-}
-
-function render_test(gl) {
-    let VSHADER = `
-        attribute vec4 a_Position;
-        void main() {
-            gl_Position = a_Position;
-        }
-    `;
-    let FSHADER = `
-        precision mediump float;
-        uniform vec4 u_FragColor;
-        void main() {
-            gl_FragColor = u_FragColor;
-        }    
-    `;
-    initShaders(gl, VSHADER, FSHADER);
-
-    let a_Position  = gl.getAttribLocation(gl.program, 'a_Position');
-
-    let u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
-    {
-        let color = WHITE.copy();
-        gl.uniform4f(u_FragColor, color.r, color.g, color.b, 1.0);
-    }
-
-    let buffers = {
-        vertices: gl.createBuffer(),
-        indices:  gl.createBuffer()
-    };
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertices);
-    {
-        let vertices = new Float32Array([
-            -0.5,  0.5, 0.0,    0.5,  0.5, 0.0,
-            -0.5, -0.5, 0.0,    0.5, -0.5, 0.0 
-        ]);
-        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
-    }
-
-    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_Position);
-
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
-    {
-        let count   = 6;
-        let indices = new Uint16Array([
-            0, 1, 2,    1, 2, 3
-        ]);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STREAM_DRAW);
-        gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_SHORT, 0);
-    }
-
-    gl.deleteBuffer(buffers.indices);
-    gl.deleteBuffer(buffers.vertices);
-}
-
-function render_obj(gl, mode, obj, color) {
-    color = color ? color.copy() : WHITE.copy();
-
-    let VSHADER = `
-        attribute vec4 a_Position;
-        void main() {
-            gl_Position = a_Position;
-        }
-    `;
-    let FSHADER = `
-        precision mediump float;
-        uniform vec4 u_FragColor;
-        void main() {
-            gl_FragColor = u_FragColor;
-        }    
-    `;
-    if (! initShaders(gl, VSHADER, FSHADER)) {
-        console.log('Failed to intialize shaders.');
-        return;
-    }
-
-    let a_Position = gl.getAttribLocation(gl.program, 'a_Position');
-    if (a_Position < 0) {
-        console.log('Failed to get the storage location of a_Position');
-        return;
-    }
-
-    let u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
-    if (! u_FragColor) {
-        console.log('Failed to get the storage location of u_FragColor');
-        return;
-    }
-    gl.uniform4f(u_FragColor, color.r, color.g, color.b, 1.0);
-
-    let buffers = {
-        vertices: gl.createBuffer(),
-        indices:  gl.createBuffer()
-    };
-    if (! buffers.vertices || ! buffers.indices) {
-        console.log('Failed to create the buffer objects');
-        return;
-    }
-
-    let vertices = flattenF32(3, obj.vertices);
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertices);
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
-    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_Position);
-
-    let indices = new Uint16Array(obj.indices);
-    let count   = obj.indices.length;
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STREAM_DRAW);
-    gl.drawElements(mode, count, gl.UNSIGNED_SHORT, 0);
-
-    gl.deleteBuffer(buffers.indices);
-    gl.deleteBuffer(buffers.vertices);
+    let left_end  = new Vector(-0.5, 0.0, 0.0);
+    let right_end = new Vector( 0.5, 0.0, 0.0);
+    let o1        = (new Cylinder(left_end, right_end, 0.2)).toTrigs(12);
+    render_obj(gl, gl.TRIANGLES, o1, xform);
 }
 
 function render_grid(gl, color) {

@@ -14,7 +14,7 @@
 #include "body-start.htm"
 
 <div id="controls-top" class="controls">
-  <div class="tab-labels" data-default="shading">
+  <div class="tab-labels" data-default="geometry">
     <label for="objects">Objects</label>
     <label for="geometry">Geometry</label>
     <label for="shading">Shading</label>
@@ -28,8 +28,6 @@
 	<button type="button">Reset</button>
       </span>
     </div>
-  </div>
-  <div id="geometry" class="tab">
     <div class="group">
       <span class="group">
 	Cylinder side-count
@@ -38,6 +36,42 @@
       <span class="group">
 	Cylinder radius
 	<input type="range"></input>
+      </span>
+    </div>
+  </div>
+  <div id="geometry" class="tab">
+    <div class="group">
+      <span class="group left-label">
+	Rotate
+      </span>
+      <span class="group">
+	X <input id="rotate-x" type="range"></input>
+	<label for="rotate-x"></label>
+      </span>
+      <span class="group">
+	Y <input id="rotate-y" type="range"></input>
+	<label for="rotate-y"></label>
+      </span>
+      <span class="group">
+	Z <input id="rotate-z" type="range"></input>
+	<label for="rotate-z"></label>
+      </span>
+    </div>
+    <div class="group">
+      <span class="group left-label">
+	Translate
+      </span>
+      <span class="group">
+	X <input id="translate-x" type="range"></input>
+	<label for="translate-x"></label>
+      </span>
+      <span class="group">
+	Y <input id="translate-y" type="range"></input>
+	<label for="translate-y"></label>
+      </span>
+      <span class="group">
+	Z <input id="translate-z" type="range"></input>
+	<label for="translate-z"></label>
       </span>
     </div>
   </div>
