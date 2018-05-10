@@ -13,6 +13,7 @@
                                                                    \
         parse: function(value) {                                   \
             GLOBAL_NAME = parseInt(value);                         \
+            value       = Math.abs(GLOBAL_NAME).toString();        \
             switch (value.length) {                                \
             case 1:                                                \
                 value = '00' + value;                              \
@@ -23,7 +24,9 @@
             }                                                      \
             if (GLOBAL_NAME >= 0)                                  \
                 value =  '+' + value;                              \
-            return ' ' + value;                                    \
+            else                                                   \
+                value =  '-' + value;                              \
+            return value;                                          \
         },                                                         \
                                                                    \
         update: function() {                                       \
@@ -35,15 +38,25 @@
     init_range({                                                   \
         id:     RANGE_ID,                                          \
         value:  0,                                                 \
-        min:    -1,                                                \
-        max:    1,                                                 \
-        step:   0.05,                                              \
+        min:    -250,                                              \
+        max:    250,                                               \
+        step:   5,                                                 \
                                                                    \
         parse: function(value) {                                   \
-            GLOBAL_NAME = parseFloat(value);                       \
-            value       = GLOBAL_NAME.toFixed(2);                  \
+            GLOBAL_NAME = parseInt(value);                         \
+            value       = Math.abs(GLOBAL_NAME).toString();        \
+            switch (value.length) {                                \
+            case 1:                                                \
+                value = '00' + value;                              \
+                break;                                             \
+            case 2:                                                \
+                value =  '0' + value;                              \
+                break;                                             \
+            }                                                      \
             if (GLOBAL_NAME >= 0)                                  \
-                value   = '+' + value;                             \
+                value =  '+' + value;                              \
+            else                                                   \
+                value =  '-' + value;                              \
             return value;                                          \
         },                                                         \
                                                                    \
@@ -77,7 +90,7 @@ function init_range(args) {
 function clear(gl, color) {
     color = color ? color.copy() : BLACK.copy();
 
-    gl.clearColor(color.r, color.g, color.b, 1.0);
+    gl.clearColor(color.r, color.g, color.b, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
 }
 
@@ -85,10 +98,10 @@ function render_obj(gl, mode, obj, xform, color) {
     color = color ? color.copy() : WHITE.copy();
 
     let VSHADER = `
-        attribute vec3 a_Position;
+        attribute vec4 a_Position;
         uniform mat4 u_Transform;
         void main() {
-            gl_Position = u_Transform * vec4(a_Position.xyz, 1.0);
+            gl_Position = u_Transform * a_Position;
         }
     `;
     let FSHADER = `
@@ -114,14 +127,14 @@ function render_obj(gl, mode, obj, xform, color) {
         console.log('Failed to get the storage location of u_Transform');
         return;
     }
-    gl.uniformMatrix4fv(u_Transform, gl.FALSE, xform.data);
+    gl.uniformMatrix4fv(u_Transform, false, xform.transpose().data);
 
     let u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
     if (! u_FragColor) {
         console.log('Failed to get the storage location of u_FragColor');
         return;
     }
-    gl.uniform4f(u_FragColor, color.r, color.g, color.b, 1.0);
+    gl.uniform4f(u_FragColor, color.r, color.g, color.b, 1);
 
     let buffers = {
         vertices: gl.createBuffer(),
@@ -135,7 +148,7 @@ function render_obj(gl, mode, obj, xform, color) {
     let vertices = Vector.flatten(obj.vertices);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertices);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
-    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, gl.FALSE, 0, 0);
+    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_Position);
 
     let indices = new Uint16Array(obj.indices);
@@ -182,7 +195,7 @@ function render_vertices(gl, mode, vertices, color) {
         console.log('Failed to get the storage location of u_FragColor');
         return;
     }
-    gl.uniform4f(u_FragColor, color.r, color.g, color.b, 1.0);
+    gl.uniform4f(u_FragColor, color.r, color.g, color.b, 1);
 
     let vertexBuffer = gl.createBuffer();
     if (! vertexBuffer) {
@@ -195,7 +208,7 @@ function render_vertices(gl, mode, vertices, color) {
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, buffer, gl.DYNAMIC_DRAW);
-    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, gl.FALSE, 0, 0);
+    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_Position);
 
     gl.drawArrays(mode, 0, count);
@@ -270,7 +283,7 @@ function render_points(gl, point_size, vertices, color) {
         console.log('Failed to get the storage location of u_FragColor');
         return;
     }
-    gl.uniform4f(u_FragColor, color.r, color.g, color.b, 1.0);
+    gl.uniform4f(u_FragColor, color.r, color.g, color.b, 1);
 
     let vertexBuffer = gl.createBuffer();
     if (! vertexBuffer) {
@@ -283,7 +296,7 @@ function render_points(gl, point_size, vertices, color) {
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, buffer, gl.DYNAMIC_DRAW);
-    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, gl.FALSE, 0, 0);
+    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_Position);
 
     gl.drawArrays(gl.POINTS, 0, count);

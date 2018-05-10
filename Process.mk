@@ -10,7 +10,7 @@ ALL_OUT  = $(JS_OUT) $(LESS_OUT) $(HTM_OUT)
 
 DIST     = $(PROJECT).tar.gz
 
-.PHONY: all watch clean dist
+.PHONY: all watch clean dist count
 all: $(MAIN:=.jsc) $(MAIN:=.css) $(MAIN:=.html)
 
 $(MAIN:=.jsc): %: $(JS_LIBS:=.js)
@@ -28,6 +28,9 @@ dist: $(DIST)
 
 $(DIST): $(ALL_OUT)
 	tar --xform "s/^/$(PROJECT)\//" -czf $@ $(ALL_OUT)
+
+count:
+	wc $(ALL_SRC)
 
 %.jsc: %.js
 	cpp -P -C -traditional-cpp -nostdinc $< $@

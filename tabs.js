@@ -23,6 +23,10 @@ let TRANSLATE_X      = null;
 let TRANSLATE_Y      = null;
 let TRANSLATE_Z      = null;
 
+let CAMERA_EYE       = new Vector(0, 0, 250);
+let CAMERA_CENTER    = ORIGIN;
+let CAMERA_UP        = new Vector(0, 1,   0);
+
 
 function init() {
     LOAD_CSS_COLOR(WHITE      , '--white')
@@ -57,7 +61,6 @@ function init() {
             $(elem).click(() => set_current_tab(e, label_for));
         });
     });
-
 }
 
 function set_current_tab(tabs_elem, label_for) {
@@ -103,13 +106,38 @@ function start(gl) {
 }
 
 function update(gl) {
-    let xform = new Matrix();
-    xform     = xform.rotateX(Radians.fromDegrees(ROTATE_X));
-    xform     = xform.rotateY(Radians.fromDegrees(ROTATE_Y));
-    xform     = xform.rotateZ(Radians.fromDegrees(ROTATE_Z));
-    // xform     = xform.translate(new Vector(TRANSLATE_X, TRANSLATE_Y, TRANSLATE_Z));
+    let model = new Matrix();
+    model     = model.rotateX(Radians.fromDegrees(ROTATE_X));
+    model     = model.rotateY(Radians.fromDegrees(ROTATE_Y));
+    model     = model.rotateZ(Radians.fromDegrees(ROTATE_Z));
+    {
+        let vec = new Vector(TRANSLATE_X, TRANSLATE_Y, TRANSLATE_Z);
+        model   = model.translate(vec);
+    }
 
-    render(gl, xform);
+    let view = Matrix.lookAt({
+        eye:     CAMERA_EYE,
+        center:  CAMERA_CENTER,
+        up:      CAMERA_UP
+    });
+
+    // let projection = Matrix.ortho({
+    //     left: -250,
+    //     right: 250,
+    //     bottom: -250,
+    //     top: 250,
+    //     near: 1,
+    //     far: 1000
+    // });
+
+    let projection = Matrix.perspective({
+        fovy: Radians.fromDegrees(100),
+        aspect: 1,
+        near: 1,
+        far: 1000
+    });
+
+    render(gl, projection.multiply(view).multiply(model));
 }
 
 function render(gl, xform, mouse_xy) {
@@ -117,18 +145,19 @@ function render(gl, xform, mouse_xy) {
 
     render_grid(gl, DARK_GREY);
 
-    let left_end  = new Vector(-0.5, 0.0, 0.0);
-    let right_end = new Vector( 0.5, 0.0, 0.0);
-    let o1        = (new Cylinder(left_end, right_end, 0.2)).toTrigs(12);
+    let left_end  = new Vector(-150, 0, 0);
+    let right_end = new Vector( 150, 0, 0);
+    let o1        = (new Cylinder(left_end, right_end, 50)).toTrigs(12);
+
     render_obj(gl, gl.TRIANGLES, o1, xform);
 }
 
 function render_grid(gl, color) {
     let vertices = [];
-    vertices.push([-1.0,  0.0, 0.0]);
-    vertices.push([ 1.0,  0.0, 0.0]);
-    vertices.push([ 0.0, -1.0, 0.0]);
-    vertices.push([ 0.0,  1.0, 0.0]);
+    vertices.push([-1,  0, 0]);
+    vertices.push([ 1,  0, 0]);
+    vertices.push([ 0, -1, 0]);
+    vertices.push([ 0,  1, 0]);
     render_lines(gl, 2, vertices, color);
 
     vertices = [];
@@ -137,11 +166,11 @@ function render_grid(gl, color) {
     for (let i = 1; i <= 2 / tick_space - 1; i++) {
         let tick = i * tick_space - 1;
 
-        vertices.push([-tick_length, tick, 0.0]);
-        vertices.push([ tick_length, tick, 0.0]);
+        vertices.push([-tick_length, tick, 0]);
+        vertices.push([ tick_length, tick, 0]);
 
-        vertices.push([tick, -tick_length, 0.0]);
-        vertices.push([tick,  tick_length, 0.0]);
+        vertices.push([tick, -tick_length, 0]);
+        vertices.push([tick,  tick_length, 0]);
     }
     render_lines(gl, 1, vertices, color);
 }
