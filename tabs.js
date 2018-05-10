@@ -131,7 +131,7 @@ function update(gl) {
     // });
 
     let projection = Matrix.perspective({
-        fovy: Radians.fromDegrees(100),
+        fovy: Radians.fromDegrees(80),
         aspect: 1,
         near: 1,
         far: 1000
@@ -147,9 +147,9 @@ function render(gl, xform, mouse_xy) {
 
     let left_end  = new Vector(-150, 0, 0);
     let right_end = new Vector( 150, 0, 0);
-    let o1        = (new Cylinder(left_end, right_end, 50)).toTrigs(12);
+    let o1        = (new Cylinder(left_end, right_end, 50)).toTrigs(100);
 
-    render_obj(gl, gl.TRIANGLES, o1, xform);
+    render_obj(gl, gl.TRIANGLES, o1, xform, BLUE);
 }
 
 function render_grid(gl, color) {
