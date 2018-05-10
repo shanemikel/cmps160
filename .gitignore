@@ -2,4 +2,7 @@
 *.css
 *.html
 
+vendor
+electron
 assg-04.tar.gz
+app.tar.gz
