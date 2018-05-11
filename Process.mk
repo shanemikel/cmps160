@@ -9,9 +9,8 @@ HTM_OUT	  = $(MAIN:=.html)
 ALL_OUT	  = $(JS_OUT) $(LESS_OUT) $(HTM_OUT)
 
 DIST      = $(PROJECT).tar.gz
-APP       = app.tar
 
-.PHONY: all watch clean dist app count
+.PHONY: all watch clean dist count
 
 all: $(MAIN:=.jsc) $(MAIN:=.css) $(MAIN:=.html)
 
@@ -30,14 +29,6 @@ dist: $(DIST)
 
 $(DIST): $(ALL_OUT) vendor
 	tar --xform "s/^/$(PROJECT)\//" -czhf $@ $^
-
-app: electron/resources $(APP)
-	rm -rf electron/resource/app
-	tar -C electron/resources -xf $(APP)
-	rm $(APP)
-
-$(APP): $(ALL_OUT) vendor package.json electron.js
-	tar --xform "s/^/app\//" -chf $@ $^
 
 count:
 	wc $(ALL_SRC)

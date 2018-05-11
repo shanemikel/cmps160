@@ -1,4 +1,5 @@
 #include "shapes.js"
+#include "collections.js"
 #include "util.js"
 
 
@@ -23,7 +24,7 @@ let TRANSLATE_X      = null;
 let TRANSLATE_Y      = null;
 let TRANSLATE_Z      = null;
 
-let CAMERA_EYE       = new Vector(0, 0, 250);
+let CAMERA_EYE       = new Vector(0, 0, 350);
 let CAMERA_CENTER    = ORIGIN;
 let CAMERA_UP        = new Vector(0, 1,   0);
 
@@ -94,6 +95,8 @@ function main() {
 }
 
 function start(gl) {
+    gl.enable(gl.DEPTH_TEST);
+
     INIT_ROTATE_SLIDER(ROTATE_X, 'rotate-x', update(gl))
     INIT_ROTATE_SLIDER(ROTATE_Y, 'rotate-y', update(gl))
     INIT_ROTATE_SLIDER(ROTATE_Z, 'rotate-z', update(gl))
@@ -131,25 +134,45 @@ function update(gl) {
     // });
 
     let projection = Matrix.perspective({
-        fovy: Radians.fromDegrees(80),
+        fovy: Radians.fromDegrees(60),
         aspect: 1,
         near: 1,
         far: 1000
     });
 
-    render(gl, projection.multiply(view).multiply(model));
+
+    render(gl, model, view, projection);
 }
 
-function render(gl, xform, mouse_xy) {
+function render(gl, model, view, projection, mouse_xy) {
     clear(gl, COLOR);
+    // render_grid(gl, DARK_GREY);
 
-    render_grid(gl, DARK_GREY);
+    let mvp = projection.multiply(view).multiply(model);
 
-    let left_end  = new Vector(-150, 0, 0);
-    let right_end = new Vector( 150, 0, 0);
-    let o1        = (new Cylinder(left_end, right_end, 50)).toTrigs(100);
+    let lights = {
+        direct:  new DirectLight(new Vector(0, 0, -1), BLUE),
+        ambiant: 0.3
+    };
 
-    render_obj(gl, gl.TRIANGLES, o1, xform, BLUE);
+    {
+        let m         = projection.multiply(view);
+        let left_end  = new Vector(-150, 0, -100);
+        let right_end = new Vector( 150, 0, -100);
+        let o1        = new Cylinder(left_end, right_end, 50);
+
+        // render_obj(gl, gl.TRIANGLES, o1.toTriangles(4), m, RED);
+    }
+
+    {
+        let left_end  = new Vector(-150, 0, 0);
+        let right_end = new Vector( 150, 0, 0);
+        let sides     = 12;
+        let o1        = new Cylinder(left_end, right_end, 50);
+        let color     = BLUE;
+
+        render_obj_flat(gl, o1.toTriangles(sides), mvp, lights, BLUE);
+    }
 }
 
 function render_grid(gl, color) {

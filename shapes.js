@@ -35,45 +35,6 @@ Polyline.prototype = {
 };
 
 
-let Polylines = function(color) {
-    this.count   = 0;
-    this.lines   = [];
-    this.current = new Polyline(color);
-};
-
-Polylines.prototype = {
-    insert: function(polyline) {
-        let i = 0;
-        for (; i < this.lines.length; i++) {
-            if (this.lines[i] === undefined)
-                break;
-        }
-
-        this.lines[i] = polyline;
-        this.count += 1;
-        return i;
-    },
-    makeNew: function(color) {
-        let i = this.insert(this.current);
-        this.current = new Polyline(color);
-        return i;
-    },
-
-    at: function(i) {
-        return this.lines[i];
-    },
-    map: function(cb) {
-        for (let i = 0; i < this.lines.length; i++)
-            if (this.lines[i] !== undefined)
-                cb(i, this.lines[i]);
-    },
-    remove: function(i) {
-        this.lines[i] = undefined;
-        this.count -= 1;
-    },
-};
-
-
 let Circle = function(center, radius) {
     this.center = center.copy();
     this.radius = radius;
@@ -114,7 +75,7 @@ Circle.prototype = {
         return res;
     },
 
-    toFrame: function(sides) {
+    toWireframe: function(sides) {
         let obj = {
             vertices: [this.center.copy()].concat(this.toPolygon(sides)),
             indices:  [],
@@ -131,7 +92,7 @@ Circle.prototype = {
         return obj;
     },
 
-    toTrigs: function(sides) {
+    toTriangles: function(sides) {
         let obj = {
             vertices: [this.center.copy()].concat(this.toPolygon(sides)),
             indices:  [],
@@ -231,74 +192,42 @@ Cylinder.prototype = {
             obj.indices = obj.indices.concat(indices);
         }
 
-        let m_rot;
+        let dir  = this.end2.sub(this.end1).unit();
+        let id   = new Matrix();
+        let rotZ = id.rotateZ(-Math.atan(dir.y / dir.x));
+        let c1_vertices, c2_vertices;
         {
-            let dir = this.end2.sub(this.end1).unit();
-            m_rot   = new Matrix();
-            m_rot   = m_rot.rotateY(Radians.fromDegrees(90));
-            m_rot   = m_rot.rotateZ(-Math.atan(dir.y / dir.x));
+            let m_rot   = rotZ.multiply(id.rotateY(Radians.fromDegrees(90)));
+            let xform1  = v => m_rot.translate(this.end1).multiply(v);
+            c1_vertices = c1_obj.vertices.map(xform1);
         }
-
         {
-            let xform1      = v => m_rot.translate(this.end1).multiply(v);
-            let c1_vertices = c1_obj.vertices.map(xform1);
-            let xform2      = v => m_rot.translate(this.end2).multiply(v);
-            let c2_vertices = c2_obj.vertices.map(xform2);
-
-            obj.vertices = obj.vertices.concat(c1_vertices);
-            obj.vertices = obj.vertices.concat(c2_vertices);
+            let m_rot   = rotZ.multiply(id.rotateY(Radians.fromDegrees(90)));
+            let xform2  = v => m_rot.translate(this.end2).multiply(v);
+            c2_vertices = c2_obj.vertices.map(xform2);
         }
+        obj.vertices = obj.vertices.concat(c1_vertices);
+        obj.vertices = obj.vertices.concat(c2_vertices);
         return obj;
     },
 
-    toFrame: function(sides) {
-        return this.toObj('toFrame', 'bridgeFrameIndices', sides);
+    toWireframe: function(sides) {
+        return this.toObj('toWireframe', 'bridgeFrameIndices', sides);
     },
 
-    toTrigs: function(sides) {
-        return this.toObj('toTrigs', 'bridgeTrigsIndices', sides);
-    },
-};
-
-let Cylinders = function() {
-    this.count     = 0;
-    this.cylinders = [];
-};
-
-Cylinders.prototype = {
-    insert: function(cylinder) {
-        let i = 0;
-        for (; i < this.cylinders.length; i++) {
-            if (this.cylinders[i] === undefined)
-                break;
-        }
-
-        this.cylinders[i]  = cylinder;
-        this.count        += 1;
-        return i;
-    },
-
-    at: function(i) {
-        return this.cylinders[i];
-    },
-    map: function(cb) {
-        for (let i = 0; i < this.cylinders.length; i++)
-            if (this.cylinders[i] !== undefined)
-                cb(i, this.cylinders[i]);
-    },
-
-    remove: function(i) {
-        this.cylinders[i]  = undefined;
-        this.count        -= 1;
+    toTriangles: function(sides) {
+        return this.toObj('toTriangles', 'bridgeTrigsIndices', sides);
     },
 };
 
+
+// TODO explicit conversion between vec3 and vec4
 
 let Vector = function(x, y, z, w) {
     this.x = x;
     this.y = y;
     this.z = z;
-    this.w = w || 1;
+    this.w = w !== undefined ? w : 1;
 };
 
 Vector.prototype = {
@@ -372,14 +301,16 @@ Vector.flatten = function(arr) {
      */
     let res = new Float32Array(arr.length * 4);
     for (let i = 0; i < arr.length; i++) {
-        res[3 * i + 0] = arr[i].x;
-        res[3 * i + 1] = arr[i].y;
-        res[3 * i + 2] = arr[i].z;
-        res[3 * i + 3] = arr[i].w;
+        res[4 * i + 0] = arr[i].x;
+        res[4 * i + 1] = arr[i].y;
+        res[4 * i + 2] = arr[i].z;
+        res[4 * i + 3] = arr[i].w;
     }
     return res;
 };
 
+
+// TODO type-checking of vec3 and vec4
 
 let Matrix = function() {
     /**  Construct a 4x4 identity matrix stored as a row-major Float32Array
@@ -578,10 +509,10 @@ Matrix.ortho = function(args) {
     mat.data[4 * row + 2] = 0;
     mat.data[4 * row + 3] = -(top + bottom) / (top - bottom);
     row = 2;
-    mat.data[4 * 2 + 0] = 0;
-    mat.data[4 * 2 + 1] = 0;
-    mat.data[4 * 2 + 2] = -2 / (far - near);
-    mat.data[4 * 2 + 3] = -(far + near) / (far - near);
+    mat.data[4 * row + 0] = 0;
+    mat.data[4 * row + 1] = 0;
+    mat.data[4 * row + 2] = -2 / (far - near);
+    mat.data[4 * row + 3] = -(far + near) / (far - near);
     return mat;
 };
 
@@ -639,6 +570,15 @@ let RGBColor = function(r, g, b, a) {
 };
 
 RGBColor.prototype = {
+    scale: function(scalar) {
+        return new RGBColor(this.r * scalar, this.g * scalar, this.b * scalar, this.a);
+    },
+
+    setAlpha: function(alpha) {
+        this.a = alpha;
+        return this;
+    },
+
     toList: function() {
         return [this.r, this.g, this.b, this.a];
     },
@@ -667,4 +607,22 @@ RGBColor.fromHex = function(hex) {
     let rgb = hexToRgb(hex.trim());
     rgb = new RGBColor(rgb.r / 255, rgb.g / 255, rgb.b / 255);
     return rgb;
+};
+
+let DirectLight = function(direction, color) {
+    this.direction = direction.unit();
+    this.color     = color.copy();
+};
+
+DirectLight.prototype = {
+    getDirection: function() {
+        return this.direction.negate();
+    },
+    getColor: function() {
+        return this.color.copy();
+    },
+
+    copy: function() {
+        return new DirectLight(this.direction.copy(), this.color.copy());
+    },
 };

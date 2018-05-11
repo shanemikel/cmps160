@@ -1,6 +1,6 @@
 #include "head-start.htm"
 
-<title>Assignment 4</title>
+<title>Assignment 5</title>
 
 #include "base-styles.htm"
 #include "font-awesome.htm"
@@ -9,7 +9,7 @@
 <meta name="viewport" content="width=device-width" />
 <meta id="g-colors" />
 <meta id="g-webgl" />
-<link href="tabs.css" rel="stylesheet" />
+<link href="driver.css" rel="stylesheet" />
 #include "head-end.htm"
 #include "body-start.htm"
 
@@ -17,6 +17,7 @@
   <div class="tab-labels" data-default="geometry">
     <label for="objects">Objects</label>
     <label for="geometry">Geometry</label>
+    <label for="lighting">Lighting</label>
     <label for="shading">Shading</label>
   </div>
   <div id="objects" class="tab">
@@ -75,6 +76,22 @@
       </span>
     </div>
   </div>
+  <div id="lighting" class="tab">
+    <form id="light-type">
+      <div class="group">
+	<span class="group">
+	  <input id="light-direct" name="light-type" type="radio" checked />
+	  <label for="light-direct">Direct</label>
+	</span>
+      </div>
+      <div class="group">
+	<span class="group">
+	  <input id="light-point" name="light-type" type="radio" />
+	  <label for="light-point">Point</label>
+	</span>
+      </div>
+    </form>
+  </div>
   <div id="shading" class="tab">
   </div>
 </div>
@@ -104,5 +121,5 @@
 </div>
 
 #include "webgl-libs.htm"
-<script src="tabs.jsc"></script>
+<script src="driver.jsc"></script>
 #include "body-end.htm"

@@ -3,67 +3,87 @@
 #define LOAD_CSS_COLOR(GLOBAL_NAME, CSS_NAME)                      \
     GLOBAL_NAME = RGBColor.fromHex($('#g-colors').css(CSS_NAME));
 
-#define INIT_ROTATE_SLIDER(GLOBAL_NAME, RANGE_ID, RENDER)          \
-    init_range({                                                   \
-        id:     RANGE_ID,                                          \
-        value:  0,                                                 \
-        min:    -180,                                              \
-        max:    180,                                               \
-        step:   10,                                                \
-                                                                   \
-        parse: function(value) {                                   \
-            GLOBAL_NAME = parseInt(value);                         \
-            value       = Math.abs(GLOBAL_NAME).toString();        \
-            switch (value.length) {                                \
-            case 1:                                                \
-                value = '00' + value;                              \
-                break;                                             \
-            case 2:                                                \
-                value =  '0' + value;                              \
-                break;                                             \
-            }                                                      \
-            if (GLOBAL_NAME >= 0)                                  \
-                value =  '+' + value;                              \
-            else                                                   \
-                value =  '-' + value;                              \
-            return value;                                          \
-        },                                                         \
-                                                                   \
-        update: function() {                                       \
-            RENDER;                                                \
-        }                                                          \
+#define INIT_ROTATE_SLIDER(GLOBAL_NAME, RANGE_ID, RENDER)    \
+    init_range({                                             \
+        id:     RANGE_ID,                                    \
+        value:  0,                                           \
+        min:    -180,                                        \
+        max:    180,                                         \
+        step:   10,                                          \
+                                                             \
+        parse: function(value) {                             \
+            GLOBAL_NAME = parseInt(value);                   \
+            value       = Math.abs(GLOBAL_NAME).toString();  \
+            switch (value.length) {                          \
+            case 1:                                          \
+                value = '00' + value;                        \
+                break;                                       \
+            case 2:                                          \
+                value =  '0' + value;                        \
+                break;                                       \
+            }                                                \
+            if (GLOBAL_NAME >= 0)                            \
+                value =  '+' + value;                        \
+            else                                             \
+                value =  '-' + value;                        \
+            return value;                                    \
+        },                                                   \
+                                                             \
+        update: function() {                                 \
+            RENDER;                                          \
+        }                                                    \
     });
 
-#define INIT_TRANSLATE_SLIDER(GLOBAL_NAME, RANGE_ID, RENDER)       \
-    init_range({                                                   \
-        id:     RANGE_ID,                                          \
-        value:  0,                                                 \
-        min:    -250,                                              \
-        max:    250,                                               \
-        step:   5,                                                 \
-                                                                   \
-        parse: function(value) {                                   \
-            GLOBAL_NAME = parseInt(value);                         \
-            value       = Math.abs(GLOBAL_NAME).toString();        \
-            switch (value.length) {                                \
-            case 1:                                                \
-                value = '00' + value;                              \
-                break;                                             \
-            case 2:                                                \
-                value =  '0' + value;                              \
-                break;                                             \
-            }                                                      \
-            if (GLOBAL_NAME >= 0)                                  \
-                value =  '+' + value;                              \
-            else                                                   \
-                value =  '-' + value;                              \
-            return value;                                          \
-        },                                                         \
-                                                                   \
-        update: function() {                                       \
-            RENDER;                                                \
-        }                                                          \
+#define INIT_TRANSLATE_SLIDER(GLOBAL_NAME, RANGE_ID, RENDER)  \
+    init_range({                                              \
+        id:     RANGE_ID,                                     \
+        value:  0,                                            \
+        min:    -250,                                         \
+        max:    250,                                          \
+        step:   5,                                            \
+                                                              \
+        parse: function(value) {                              \
+            GLOBAL_NAME = parseInt(value);                    \
+            value       = Math.abs(GLOBAL_NAME).toString();   \
+            switch (value.length) {                           \
+            case 1:                                           \
+                value = '00' + value;                         \
+                break;                                        \
+            case 2:                                           \
+                value =  '0' + value;                         \
+                break;                                        \
+            }                                                 \
+            if (GLOBAL_NAME >= 0)                             \
+                value =  '+' + value;                         \
+            else                                              \
+                value =  '-' + value;                         \
+            return value;                                     \
+        },                                                    \
+                                                              \
+        update: function() {                                  \
+            RENDER;                                           \
+        }                                                     \
     });
+
+#define INIT_SHADERS(GL, VERTEX_SHADER, FRAGMENT_SHADER)      \
+    if (! initShaders(GL, VERTEX_SHADER, FRAGMENT_SHADER)) {  \
+        console.log('Failed to intialize shaders.');          \
+        return;                                               \
+    }
+
+#define GET_ATTRIBUTE(VAR_NAME, GL, SHADER_NAME)                              \
+    let VAR_NAME = GL.getAttribLocation(GL.program, SHADER_NAME);             \
+    if (VAR_NAME < 0) {                                                       \
+        console.log('Failed to get the storage location of ' + SHADER_NAME);  \
+        return;                                                               \
+    }
+
+#define GET_UNIFORM(VAR_NAME, GL, SHADER_NAME)                                \
+    let VAR_NAME = GL.getUniformLocation(GL.program, SHADER_NAME);            \
+    if (! VAR_NAME) {                                                         \
+        console.log('Failed to get the storage location of ' + SHADER_NAME);  \
+        return;                                                               \
+    }
 
 function init_range(args) {
     let parse  = args.parse;
@@ -90,8 +110,119 @@ function init_range(args) {
 function clear(gl, color) {
     color = color ? color.copy() : BLACK.copy();
 
-    gl.clearColor(color.r, color.g, color.b, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clearColor(color.r, color.g, color.b, color.a);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+}
+
+function render_obj_flat(gl, obj, xform, lights, color) {
+    color = color ? color.copy() : WHITE.copy();
+
+    let VSHADER = `#version 100
+        attribute vec4 a_Position;
+        attribute vec4 a_Normal;
+
+        uniform   mat4 u_Transform;
+        uniform   vec4 u_FaceColor;
+        uniform   vec3 u_LightDirection;
+        uniform   vec3 u_LightColor;
+
+        varying   vec4 v_FragColor;
+
+        void main(void)
+        {
+            gl_Position = u_Transform * a_Position;
+            vec4 normal = u_Transform * a_Normal;
+
+            v_FragColor     = u_FaceColor;
+            float intensity = dot(u_LightDirection, normal.xyz);
+
+            if (intensity > 0.0) {
+                vec3 light   = intensity * u_LightColor;
+                v_FragColor += vec4(light, 1.0);
+            }
+        }`;
+
+    let FSHADER = `#version 100
+        precision mediump float;
+
+        varying vec4 v_FragColor;
+
+        void main(void)
+        {
+            gl_FragColor = v_FragColor;
+        }    
+    `;
+
+    INIT_SHADERS(gl, VSHADER, FSHADER)
+    GET_ATTRIBUTE(a_Position, gl, 'a_Position')
+    GET_ATTRIBUTE(a_Normal,   gl, 'a_Normal')
+
+    GET_UNIFORM(u_Transform,      gl, 'u_Transform')
+    GET_UNIFORM(u_FaceColor,      gl, 'u_FaceColor')
+    GET_UNIFORM(u_LightDirection, gl, 'u_LightDirection')
+    GET_UNIFORM(u_LightColor,     gl, 'u_LightColor')
+
+    let direct_light   = lights.direct;
+    let dl_dir         = direct_light.getDirection();
+    let dl_col         = direct_light.getColor();
+
+    color = color.scale(lights.ambiant);
+    
+    gl.uniformMatrix4fv(u_Transform, false, xform.transpose().data);
+    gl.uniform4f(u_FaceColor, color.r, color.g, color.b, color.a);
+    gl.uniform3f(u_LightDirection, dl_dir.x, dl_dir.y, dl_dir.z);
+    gl.uniform3f(u_LightColor, dl_col.r, dl_col.g, dl_col.b);
+
+    let buffer = {
+        vertices: gl.createBuffer(),
+        normals:  gl.createBuffer()
+    };
+    if (! buffer.vertices || ! buffer.normals) {
+        console.log('Failed to create the buffer objects');
+        return;
+    }
+
+    let normals  = [];
+    let vertices = [];
+    let count    = obj.indices.length;
+    for (let i = 0; i < count / 3; i++) {
+        let i0 = obj.indices[3 * i + 0];
+        let i1 = obj.indices[3 * i + 1];
+        let i2 = obj.indices[3 * i + 2];
+
+        let v0 = obj.vertices[i0];
+        let v1 = obj.vertices[i1];
+        let v2 = obj.vertices[i2];
+
+        let normal = v2.sub(v0).cross(v1.sub(v0)).unit();
+        normal.w   = 0;
+
+        vertices.push(v0);
+        normals.push(normal);
+
+        vertices.push(v1);
+        normals.push(normal);
+
+        vertices.push(v2);
+        normals.push(normal);
+    }
+    normals  = Vector.flatten(normals);
+    vertices = Vector.flatten(vertices);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.vertices);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(a_Position, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Position);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.normals);
+    gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(a_Normal, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Normal);
+
+    gl.drawArrays(gl.TRIANGLES, 0, count);
+
+    gl.deleteBuffer(buffer.normals);
+    gl.deleteBuffer(buffer.vertices);
 }
 
 function render_obj(gl, mode, obj, xform, color) {
@@ -111,30 +242,14 @@ function render_obj(gl, mode, obj, xform, color) {
             gl_FragColor = u_FragColor;
         }    
     `;
-    if (! initShaders(gl, VSHADER, FSHADER)) {
-        console.log('Failed to intialize shaders.');
-        return;
-    }
+    INIT_SHADERS(gl, VSHADER, FSHADER)
+    GET_ATTRIBUTE(a_Position, gl, 'a_Position')
 
-    let a_Position = gl.getAttribLocation(gl.program, 'a_Position');
-    if (a_Position < 0) {
-        console.log('Failed to get the storage location of a_Position');
-        return;
-    }
+    GET_UNIFORM(u_Transform, gl, 'u_Transform')
+    GET_UNIFORM(u_FragColor, gl, 'u_FragColor')
 
-    let u_Transform = gl.getUniformLocation(gl.program, 'u_Transform');
-    if (! u_Transform) {
-        console.log('Failed to get the storage location of u_Transform');
-        return;
-    }
     gl.uniformMatrix4fv(u_Transform, false, xform.transpose().data);
-
-    let u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
-    if (! u_FragColor) {
-        console.log('Failed to get the storage location of u_FragColor');
-        return;
-    }
-    gl.uniform4f(u_FragColor, color.r, color.g, color.b, 1);
+    gl.uniform4f(u_FragColor, color.r, color.g, color.b, color.a);
 
     let buffers = {
         vertices: gl.createBuffer(),
@@ -148,7 +263,7 @@ function render_obj(gl, mode, obj, xform, color) {
     let vertices = Vector.flatten(obj.vertices);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertices);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
-    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(a_Position, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_Position);
 
     let indices = new Uint16Array(obj.indices);
@@ -162,7 +277,7 @@ function render_obj(gl, mode, obj, xform, color) {
 }
 
 function render_vertices(gl, mode, vertices, color) {
-    color = color || WHITE;
+    color = color ? color.copy() : WHITE.copy();
 
     let VSHADER = `
         attribute vec4 a_Position;
@@ -179,23 +294,12 @@ function render_vertices(gl, mode, vertices, color) {
             gl_FragColor = u_FragColor;
         }
     `;
-    if (! initShaders(gl, VSHADER, FSHADER)) {
-        console.log('Failed to intialize shaders.');
-        return;
-    }
+    INIT_SHADERS(gl, VSHADER, FSHADER)
+    GET_ATTRIBUTE(a_Position, gl, 'a_Position')
 
-    let a_Position = gl.getAttribLocation(gl.program, 'a_Position');
-    if (a_Position < 0) {
-        console.log('Failed to get the storage location of a_Position');
-        return;
-    }
+    GET_UNIFORM(u_FragColor, gl, 'u_FragColor')
 
-    let u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
-    if (! u_FragColor) {
-        console.log('Failed to get the storage location of u_FragColor');
-        return;
-    }
-    gl.uniform4f(u_FragColor, color.r, color.g, color.b, 1);
+    gl.uniform4f(u_FragColor, color.r, color.g, color.b, color.a);
 
     let vertexBuffer = gl.createBuffer();
     if (! vertexBuffer) {
@@ -243,7 +347,7 @@ function render_triangle_fan(gl, vertices, color) {
 }
 
 function render_points(gl, point_size, vertices, color) {
-    color = color || WHITE;
+    color = color ? color.copy() : WHITE.copy();
 
     let VSHADER = `
         attribute vec4 a_Position;
@@ -260,30 +364,14 @@ function render_points(gl, point_size, vertices, color) {
             gl_FragColor = u_FragColor;
         }
     `;
-    if (! initShaders(gl, VSHADER, FSHADER)) {
-        console.log('Failed to intialize shaders.');
-        return;
-    }
+    INIT_SHADERS(gl, VSHADER, FSHADER)
+    GET_ATTRIBUTE(a_Position, gl, 'a_Position')
 
-    let a_Position = gl.getAttribLocation(gl.program, 'a_Position');
-    if (a_Position < 0) {
-        console.log('Failed to get the storage location of a_Position');
-        return;
-    }
+    GET_UNIFORM(u_FragColor, gl, 'u_FragColor')
+    GET_UNIFORM(u_PointSize, gl, 'u_PointSize')
 
-    let u_PointSize = gl.getUniformLocation(gl.program, 'u_PointSize');
-    if (! u_PointSize) {
-        console.log('Failed to get the storage location of u_PointSize');
-        return;
-    }
     gl.uniform1f(u_PointSize, point_size);
-
-    let u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
-    if (! u_FragColor) {
-        console.log('Failed to get the storage location of u_FragColor');
-        return;
-    }
-    gl.uniform4f(u_FragColor, color.r, color.g, color.b, 1);
+    gl.uniform4f(u_FragColor, color.r, color.g, color.b, color.a);
 
     let vertexBuffer = gl.createBuffer();
     if (! vertexBuffer) {

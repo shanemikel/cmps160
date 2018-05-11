@@ -75,6 +75,30 @@ input[type='file']
     }
 }
 
+@current-radio-color:            @black;
+@current-radio-highlight-color:  @disabled-button-border-color;
+@current-radio-text-color:       @text-color;
+
+input[type='radio']
+{
+    display: none;
+
+    & + label
+    {
+        .button();
+
+        display: inline-block;
+    }
+
+    &:checked + label
+    {
+        color: @current-radio-text-color;
+        background-color: @current-radio-color;
+
+        border-color: @current-radio-highlight-color;
+    }
+}
+
 
 @thumb-width:            12px;
 @thumb-height:           24px;
