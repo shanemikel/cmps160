@@ -151,28 +151,17 @@ function render(gl, model, view, projection, mouse_xy) {
     let mvp = projection.multiply(view).multiply(model);
 
     let lights = {
-        direct:  new DirectLight(new Vector(0, 0, -1), BLUE),
-        ambiant: 0.3
+        direct:  new DirectLight(new Vector(0, 0, -1), BLUE.scale(0.8)),
+        ambiant: 0.1
     };
 
-    {
-        let m         = projection.multiply(view);
-        let left_end  = new Vector(-150, 0, -100);
-        let right_end = new Vector( 150, 0, -100);
-        let o1        = new Cylinder(left_end, right_end, 50);
+    let left_end  = new Vector(-150,  0);
+    let right_end = new Vector( 150,  0);
+    let sides     = 26;
+    let o1        = new Cylinder(left_end, right_end, 50);
+    let trigs     = o1.toTriangles(sides);
 
-        // render_obj(gl, gl.TRIANGLES, o1.toTriangles(4), m, RED);
-    }
-
-    {
-        let left_end  = new Vector(-150, 0, 0);
-        let right_end = new Vector( 150, 0, 0);
-        let sides     = 12;
-        let o1        = new Cylinder(left_end, right_end, 50);
-        let color     = BLUE;
-
-        render_obj_flat(gl, o1.toTriangles(sides), mvp, lights, BLUE);
-    }
+    render_obj_flat(gl, trigs, mvp, lights, BLUE);
 }
 
 function render_grid(gl, color) {

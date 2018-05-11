@@ -112,6 +112,10 @@ Circle.prototype = {
 let Cylinder = function(end1, end2, radius, color) {
     this.end1   = end1.copy();
     this.end2   = end2.copy();
+
+    end1.z = 0;
+    end2.z = 0;
+
     this.radius = radius;
 
     if (color !== undefined)
@@ -155,12 +159,21 @@ Cylinder.prototype = {
             let i2 = i + 1;
             if (i2 == sides + 1)
                 i2 = 1;
-            indices.push({end: 1, index: i});
-            indices.push({end: 2, index: i});
-            indices.push({end: 1, index: i2});
-            indices.push({end: 2, index: i});
-            indices.push({end: 1, index: i2});
-            indices.push({end: 2, index: i2});
+            if (sides % 2 == 0) {
+                indices.push({end: 1, index: i});
+                indices.push({end: 2, index: i});
+                indices.push({end: 1, index: i2});
+                indices.push({end: 1, index: i2});
+                indices.push({end: 2, index: i});
+                indices.push({end: 2, index: i2});
+            } else {
+                indices.push({end: 2, index: i});
+                indices.push({end: 1, index: i});
+                indices.push({end: 1, index: i2});
+                indices.push({end: 2, index: i});
+                indices.push({end: 1, index: i2});
+                indices.push({end: 2, index: i2});
+            }
         }
         return indices;
     },
@@ -176,8 +189,24 @@ Cylinder.prototype = {
         let c1_start = 0;
         let c2_start = c1_obj.vertices.length;
 
-        obj.indices = obj.indices.concat(c1_obj.indices);
-        obj.indices = obj.indices.concat(c2_obj.indices.map(i => i + c2_start));
+        if (sides % 2 == 0) {
+            obj.indices = obj.indices.concat(c1_obj.indices);
+            for (let i = 0; i < c2_obj.indices.length / 3; i++) {
+                let tmp = c2_obj.indices[3 * i + 1];
+                c2_obj.indices[3 * i + 1] = c2_obj.indices[3 * i + 2]
+                c2_obj.indices[3 * i + 2] = tmp;
+            }
+            obj.indices = obj.indices.concat(c2_obj.indices.map(i => i + c2_start));
+        } else {
+            for (let i = 0; i < c1_obj.indices.length / 3; i++) {
+                let tmp = c1_obj.indices[3 * i + 1];
+                c1_obj.indices[3 * i + 1] = c1_obj.indices[3 * i + 2]
+                c1_obj.indices[3 * i + 2] = tmp;
+            }
+            obj.indices = obj.indices.concat(c1_obj.indices);
+            obj.indices = obj.indices.concat(c2_obj.indices.map(i => i + c2_start));
+        }
+
         {
             let indices  = this[bridgeIndicesFn](sides).map(function(i) {
                 switch (i.end) {
@@ -226,7 +255,7 @@ Cylinder.prototype = {
 let Vector = function(x, y, z, w) {
     this.x = x;
     this.y = y;
-    this.z = z;
+    this.z = z !== undefined ? z : 0;
     this.w = w !== undefined ? w : 1;
 };
 
