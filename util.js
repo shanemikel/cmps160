@@ -276,6 +276,29 @@ function render_obj(gl, mode, obj, xform, color) {
     gl.deleteBuffer(buffers.vertices);
 }
 
+function render_grid(gl, color) {
+    let vertices = [];
+    vertices.push([-1,  0, 0]);
+    vertices.push([ 1,  0, 0]);
+    vertices.push([ 0, -1, 0]);
+    vertices.push([ 0,  1, 0]);
+    render_lines(gl, 2, vertices, color);
+
+    vertices = [];
+    let tick_length = 0.5;
+    let tick_space  = 0.1;
+    for (let i = 1; i <= 2 / tick_space - 1; i++) {
+        let tick = i * tick_space - 1;
+
+        vertices.push([-tick_length, tick, 0]);
+        vertices.push([ tick_length, tick, 0]);
+
+        vertices.push([tick, -tick_length, 0]);
+        vertices.push([tick,  tick_length, 0]);
+    }
+    render_lines(gl, 1, vertices, color);
+}
+
 function render_vertices(gl, mode, vertices, color) {
     color = color ? color.copy() : WHITE.copy();
 

@@ -108,7 +108,9 @@ function start(gl) {
     update(gl);
 }
 
-function update(gl) {
+function update(gl, mouse_xy) {
+    clear(gl, COLOR);
+
     let model = new Matrix();
     model     = model.rotateX(Radians.fromDegrees(ROTATE_X));
     model     = model.rotateY(Radians.fromDegrees(ROTATE_Y));
@@ -124,36 +126,35 @@ function update(gl) {
         up:      CAMERA_UP
     });
 
-    // let projection = Matrix.ortho({
-    //     left: -250,
-    //     right: 250,
-    //     bottom: -250,
-    //     top: 250,
-    //     near: 1,
-    //     far: 1000
-    // });
-
-    let projection = Matrix.perspective({
-        fovy: Radians.fromDegrees(60),
-        aspect: 1,
-        near: 1,
-        far: 1000
-    });
-
-
-    render(gl, model, view, projection);
-}
-
-function render(gl, model, view, projection, mouse_xy) {
-    clear(gl, COLOR);
-    // render_grid(gl, DARK_GREY);
+    let projection;
+    if (false) {
+        render_grid(gl, DARK_GREY);
+        projection = Matrix.ortho({
+            left: -250,
+            right: 250,
+            bottom: -250,
+            top: 250,
+            near: 1,
+            far: 1000
+        });
+    } else {
+        projection = Matrix.perspective({
+            fovy: Radians.fromDegrees(60),
+            aspect: 1,
+            near: 1,
+            far: 1000
+        });
+    }
 
     let mvp = projection.multiply(view).multiply(model);
 
-    let lights = {
-        direct:  new DirectLight(new Vector(0, 0, -1), BLUE.scale(0.8)),
-        ambiant: 0.1
-    };
+    let lights = {};
+
+    if (true)
+        lights.ambiant = 0.1;
+
+    if (true)
+        lights.direct = new DirectLight(new Vector(0, 0, -1), BLUE.scale(0.8));
 
     let left_end  = new Vector(-150,  0);
     let right_end = new Vector( 150,  0);
@@ -162,27 +163,4 @@ function render(gl, model, view, projection, mouse_xy) {
     let trigs     = o1.toTriangles(sides);
 
     render_obj_flat(gl, trigs, mvp, lights, BLUE);
-}
-
-function render_grid(gl, color) {
-    let vertices = [];
-    vertices.push([-1,  0, 0]);
-    vertices.push([ 1,  0, 0]);
-    vertices.push([ 0, -1, 0]);
-    vertices.push([ 0,  1, 0]);
-    render_lines(gl, 2, vertices, color);
-
-    vertices = [];
-    let tick_length = 0.5;
-    let tick_space  = 0.1;
-    for (let i = 1; i <= 2 / tick_space - 1; i++) {
-        let tick = i * tick_space - 1;
-
-        vertices.push([-tick_length, tick, 0]);
-        vertices.push([ tick_length, tick, 0]);
-
-        vertices.push([tick, -tick_length, 0]);
-        vertices.push([tick,  tick_length, 0]);
-    }
-    render_lines(gl, 1, vertices, color);
 }
