@@ -29,6 +29,20 @@ let CAMERA_CENTER    = ORIGIN;
 let CAMERA_UP        = new Vector(0, 1,   0);
 
 
+let shading = {
+    FLAT:    'shading-flat',
+    GOURAUD: 'shading-gouraud',
+    PHONG:   'shading-phong'
+};
+let SHADING = shading.FLAT;
+
+let shape = {
+    CYLINDER: 'shape-cylinder',
+    SPHERE:   'shape-sphere'
+};
+let SHAPE = shape.CYLINDER;
+
+
 function init() {
     LOAD_CSS_COLOR(WHITE      , '--white')
     LOAD_CSS_COLOR(BLACK      , '--black')
@@ -105,6 +119,20 @@ function start(gl) {
     INIT_TRANSLATE_SLIDER(TRANSLATE_Y, 'translate-y', update(gl))
     INIT_TRANSLATE_SLIDER(TRANSLATE_Z, 'translate-z', update(gl))
 
+    $('#' + SHADING).attr('checked', 'checked');
+    $('form#shading-type input[name=shading-type]').on('change', function(e) {
+        let elem = $(e.target);
+        SHADING  = elem.attr('id');
+        update(gl);
+    });
+
+    $('#' + SHAPE).attr('checked', 'checked');
+    $('form#shape-type input[name=shape-type]').on('change', function(e) {
+        let elem = $(e.target);
+        SHAPE    = elem.attr('id');
+        update(gl);
+    });
+
     update(gl);
 }
 
@@ -154,13 +182,37 @@ function update(gl, mouse_xy) {
         lights.ambiant = 0.1;
 
     if (true)
-        lights.direct = new DirectLight(new Vector(0, 0, -1), BLUE.scale(0.8));
+        lights.direct = new DirectLight(new Vector(0, 0, -1, 0), BLUE.scale(0.6));
 
-    let left_end  = new Vector(-150,  0);
-    let right_end = new Vector( 150,  0);
-    let sides     = 26;
-    let o1        = new Cylinder(left_end, right_end, 50);
-    let trigs     = o1.toTriangles(sides);
+    if (true)
+        lights.point = new PointLight(new Vector(0, 200, 200), WHITE.scale(0.6));
 
-    render_obj_flat(gl, trigs, mvp, lights, BLUE);
+    let obj;
+    switch (SHAPE) {
+    case shape.CYLINDER:
+        let left_end  = new Vector(-150,  0);
+        let right_end = new Vector( 150,  0);
+        let sides     = 12;
+        let cylinder  = new Cylinder(left_end, right_end, 50);
+
+        obj = cylinder.toTriangles(sides);
+        break;
+    case shape.SPHERE:
+        let sphere = new Sphere(ORIGIN, 100);
+
+        obj = sphere.toTriangles(25, 25);
+        break;
+    }
+
+    switch (SHADING) {
+    case shading.FLAT:
+        render_obj_flat(gl, obj, mvp, lights, BLUE);
+        break;
+    case shading.GOURAUD:
+        render_obj_gouraud(gl, obj, mvp, lights, BLUE);
+        break;
+    case shading.PHONG:
+        render_obj_phong(gl, obj, mvp, lights, BLUE);
+        break;
+    }
 }

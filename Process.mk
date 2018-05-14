@@ -1,3 +1,9 @@
+VENDOR_DIR  = vendor
+ifdef USE_CDN
+USE_CDN    := -DUSE_CDN
+VENDOR_DIR  =
+endif
+
 JS_SRC	  = $(MAIN:=.js) $(JS_LIBS:=.js)
 LESS_SRC  = $(MAIN:=.less) $(LESS_LIBS:=.less)
 HTM_SRC	  = $(MAIN:=.htm) $(HTM_LIBS:=.htm)
@@ -27,8 +33,8 @@ clean:
 
 dist: $(DIST)
 
-$(DIST): $(ALL_OUT) vendor
-	tar --xform "s/^/$(PROJECT)\//" -czhf $@ $^
+$(DIST): $(ALL_OUT) lib
+	tar --xform "s/^/$(PROJECT)\//" -czhf $@ $^ $(VENDOR_DIR)
 
 count:
 	wc $(ALL_SRC)
@@ -40,4 +46,4 @@ count:
 	node --no-deprecation $(shell which lessc) $< > $@
 
 %.html: %.htm
-	cpp -P -C -traditional-cpp -nostdinc $< $@
+	cpp $(USE_CDN) -P -C -traditional-cpp -nostdinc $< $@

@@ -14,7 +14,7 @@
 #include "body-start.htm"
 
 <div id="controls-top" class="controls">
-  <div class="tab-labels" data-default="geometry">
+  <div class="tab-labels" data-default="shading">
     <label for="objects">Objects</label>
     <label for="geometry">Geometry</label>
     <label for="lighting">Lighting</label>
@@ -99,6 +99,22 @@
     </form>
   </div>
   <div id="shading" class="tab">
+    <div class="group">
+      <form id="shading-type">
+	<span class="group">
+	  <input id="shading-flat" name="shading-type" type="radio" />
+	  <label for="shading-flat">Flat</label>
+	</span>
+	<span class="group">
+	  <input id="shading-gouraud" name="shading-type" type="radio" />
+	  <label for="shading-gouraud">Gouraud</label>
+	</span>
+	<span class="group">
+	  <input id="shading-phong" name="shading-type" type="radio" />
+	  <label for="shading-phong">Phong</label>
+	</span>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -112,6 +128,16 @@
   <div id="controls-left" class="controls">
     <label for="object-pane">Object Manager</label>
     <div id="object-pane" class="group"></div>
+    <form id="shape-type">
+      <div class="group">
+	<input id="shape-cylinder" name="shape-type" type="radio" />
+	<label for="shape-cylinder">Cylinder</label>
+      </div>
+      <div class="group">
+	<input id="shape-sphere" name="shape-type" type="radio" />
+	<label for="shape-sphere">Sphere</label>
+      </div>
+    </form>
   </div>
 
   <div id="webgl-mask">

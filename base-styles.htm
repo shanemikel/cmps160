@@ -1,4 +1,11 @@
-<link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css"
-      rel="stylesheet" />
-<link href="https://fonts.googleapis.com/css?family=Inconsolata|Roboto+Condensed"
-      rel="stylesheet" />
+#ifdef USE_CDN
+<link
+  href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css"
+  rel="stylesheet" />
+<link
+  href="https://fonts.googleapis.com/css?family=Inconsolata|Roboto+Condensed"
+  rel="stylesheet" />
+#else
+<link href="vendor/normalize-8.0.0.min.css" rel="stylesheet" />
+<link href="vendor/fonts.css" rel="stylesheet" />
+#endif

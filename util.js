@@ -114,6 +114,241 @@ function clear(gl, color) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 }
 
+function normalize_obj_interpolated(obj) {
+    /**  Make a Vertices/Normals OBJ from a Indices/Vertices OBJ
+     *   @param obj.indices the index array
+     *   @param obj.vertices the vertex array
+     *   @return an OBJ with obj.vertices and obj.normals
+     */
+    let face_map = {
+        data: {},
+
+        insert_face_normal: function(i0, i1, i2, obj) {
+            let insert = function(that, index, obj) {
+                if (that.data[index] === undefined)
+                    that.data[index] = [];
+                that.data[index].push(obj);
+            };
+            insert(this, i0, obj);
+            insert(this, i1, obj);
+            insert(this, i2, obj);
+        },
+
+        lookup_incident_normals: function(i0) {
+            return this.data[i0];
+        },
+    };
+    let count = obj.indices.length;
+    for (let i = 0; i < count / 3; i++) {
+        let i0 = obj.indices[3 * i + 0];
+        let i1 = obj.indices[3 * i + 1];
+        let i2 = obj.indices[3 * i + 2];
+
+        let v0 = obj.vertices[i0];
+        let v1 = obj.vertices[i1];
+        let v2 = obj.vertices[i2];
+
+        let normal = v2.sub(v0).cross(v1.sub(v0));
+
+        face_map.insert_face_normal(i0, i1, i2, normal);
+    }
+    let vertices = [];
+    let normals  = [];
+    for (let i = 0; i < count; i++) {
+        let i0 = obj.indices[i];
+        let v0 = obj.vertices[i0];
+
+        let normal       = new Vector(0, 0, 0);
+        let faces        = 0;
+        let face_normals = face_map.lookup_incident_normals(i0);
+        for (let j = 0; j < face_normals.length; j++) {
+            normal = normal.add(face_normals[j]);
+            faces += 1;
+        }
+        normal   = normal.scale(1 / faces).unit();
+        normal.w = 0;
+
+        vertices.push(v0);
+        normals.push(normal);
+    }
+    return {vertices: vertices, normals: normals};
+}
+
+function render_obj_phong(gl, obj, xform, lights, color) {
+    // TODO not yet implemented (currently identical to gouraud)
+
+    let VSHADER = `#version 100
+        attribute vec4 a_Position;
+        attribute vec4 a_Normal;
+        attribute vec4 a_Color;
+
+        uniform mat4 u_Transform;
+        uniform vec3 u_LightDirection;
+        uniform vec3 u_LightColor;
+
+        varying vec4 v_Color;
+
+        void main(void)
+        {
+            gl_Position = u_Transform * a_Position;
+            vec4 normal = u_Transform * a_Normal;
+
+            v_Color         = a_Color;
+            float intensity = max(dot(u_LightDirection, normal.xyz), 0.0);
+
+            vec3 light  = intensity * u_LightColor;
+            v_Color    += vec4(light, 1.0);
+        }`;
+
+    let FSHADER = `#version 100
+        precision mediump float;
+
+        varying vec4 v_Color;
+
+        void main(void)
+        {
+            gl_FragColor = v_Color;
+        }    
+    `;
+
+    render_obj_interpolated(VSHADER, FSHADER, gl, obj, xform, lights, color);
+}
+
+function render_obj_gouraud(gl, obj, xform, lights, color) {
+    let VSHADER = `#version 100
+        attribute vec4 a_Position;
+        attribute vec4 a_Normal;
+        attribute vec4 a_Color;
+
+        uniform mat4 u_Transform;
+        uniform vec3 u_LightDirection;
+        uniform vec3 u_LightColor;
+
+        varying vec4 v_Color;
+
+        void main(void)
+        {
+            gl_Position = u_Transform * a_Position;
+            vec4 normal = u_Transform * a_Normal;
+
+            v_Color         = a_Color;
+            float intensity = max(dot(u_LightDirection, normal.xyz), 0.0);
+
+            vec3 light  = intensity * u_LightColor;
+            v_Color    += vec4(light, 1.0);
+        }`;
+
+    let FSHADER = `#version 100
+        precision mediump float;
+
+        varying vec4 v_Color;
+
+        void main(void)
+        {
+            gl_FragColor = v_Color;
+        }    
+    `;
+
+    render_obj_interpolated(VSHADER, FSHADER, gl, obj, xform, lights, color);
+}
+
+function render_obj_interpolated(vert, frag, gl, obj, xform, lights, color) {
+    color = color ? color.copy() : WHITE.copy();
+
+    INIT_SHADERS(gl, vert, frag)
+    GET_ATTRIBUTE(a_Position, gl, 'a_Position')
+    GET_ATTRIBUTE(a_Normal,   gl, 'a_Normal')
+    GET_ATTRIBUTE(a_Color,    gl, 'a_Color')
+
+    GET_UNIFORM(u_Transform,      gl, 'u_Transform')
+    GET_UNIFORM(u_LightDirection, gl, 'u_LightDirection')
+    GET_UNIFORM(u_LightColor,     gl, 'u_LightColor')
+
+    let direct_light   = lights.direct;
+    let dl_dir         = direct_light.getDirection();
+    let dl_col         = direct_light.getColor();
+
+    color = color.scale(lights.ambiant);
+    
+    gl.uniformMatrix4fv(u_Transform, false, xform.transpose().data);
+    gl.uniform3f(u_LightDirection, dl_dir.x, dl_dir.y, dl_dir.z);
+    gl.uniform3f(u_LightColor, dl_col.r, dl_col.g, dl_col.b);
+
+    let count = obj.indices.length;
+    obj       = normalize_obj_interpolated(obj);
+
+    let vertices = Vector.flatten(obj.vertices);
+    let normals  = Vector.flatten(obj.normals);
+
+    let buffer = {
+        vertices: gl.createBuffer(),
+        normals:  gl.createBuffer(),
+        colors:   gl.createBuffer()
+    };
+    if (! buffer.vertices || ! buffer.normals || ! buffer.colors) {
+        console.log('Failed to create the buffer objects');
+        return;
+    }
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.vertices);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(a_Position, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Position);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.normals);
+    gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(a_Normal, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Normal);
+
+    let colors = [];
+    for (let i = 0; i < count; i++)
+        colors.push(color.copy());
+    colors = RGBColor.flatten(colors);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.colors);
+    gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(a_Color, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Color);
+
+    gl.drawArrays(gl.TRIANGLES, 0, count);
+
+    gl.deleteBuffer(buffer.normals);
+    gl.deleteBuffer(buffer.vertices);
+}
+
+function normalize_obj_flat(obj) {
+    /**  Make a Vertices+Normals OBJ from a Indices+Vertices OBJ
+     *   @param obj.indices the index array
+     *   @param obj.vertices the vertex array
+     *   @return an OBJ with obj.vertices and obj.normals
+     */
+    let count    = obj.indices.length;
+    let vertices = [];
+    let normals  = [];
+    for (let i = 0; i < count / 3; i++) {
+        let i0 = obj.indices[3 * i + 0];
+        let i1 = obj.indices[3 * i + 1];
+        let i2 = obj.indices[3 * i + 2];
+
+        let v0 = obj.vertices[i0];
+        let v1 = obj.vertices[i1];
+        let v2 = obj.vertices[i2];
+
+        let normal = v2.sub(v0).cross(v1.sub(v0)).unit();
+        normal.w   = 0;
+
+        vertices.push(v0);
+        normals.push(normal);
+
+        vertices.push(v1);
+        normals.push(normal);
+
+        vertices.push(v2);
+        normals.push(normal);
+    }
+    return {vertices: vertices, normals: normals};
+}
+
 function render_obj_flat(gl, obj, xform, lights, color) {
     color = color ? color.copy() : WHITE.copy();
 
@@ -121,35 +356,33 @@ function render_obj_flat(gl, obj, xform, lights, color) {
         attribute vec4 a_Position;
         attribute vec4 a_Normal;
 
-        uniform   mat4 u_Transform;
-        uniform   vec4 u_FaceColor;
-        uniform   vec3 u_LightDirection;
-        uniform   vec3 u_LightColor;
+        uniform mat4 u_Transform;
+        uniform vec4 u_FaceColor;
+        uniform vec3 u_LightDirection;
+        uniform vec3 u_LightColor;
 
-        varying   vec4 v_FragColor;
+        varying vec4 v_Color;
 
         void main(void)
         {
             gl_Position = u_Transform * a_Position;
             vec4 normal = u_Transform * a_Normal;
 
-            v_FragColor     = u_FaceColor;
+            v_Color         = u_FaceColor;
             float intensity = dot(u_LightDirection, normal.xyz);
 
-            if (intensity > 0.0) {
-                vec3 light   = intensity * u_LightColor;
-                v_FragColor += vec4(light, 1.0);
-            }
+            vec3 light  = intensity * u_LightColor;
+            v_Color    += vec4(light, 1.0);
         }`;
 
     let FSHADER = `#version 100
         precision mediump float;
 
-        varying vec4 v_FragColor;
+        varying vec4 v_Color;
 
         void main(void)
         {
-            gl_FragColor = v_FragColor;
+            gl_FragColor = v_Color;
         }    
     `;
 
@@ -173,6 +406,12 @@ function render_obj_flat(gl, obj, xform, lights, color) {
     gl.uniform3f(u_LightDirection, dl_dir.x, dl_dir.y, dl_dir.z);
     gl.uniform3f(u_LightColor, dl_col.r, dl_col.g, dl_col.b);
 
+    let count = obj.indices.length;
+    obj       = normalize_obj_flat(obj);
+
+    let vertices = Vector.flatten(obj.vertices);
+    let normals  = Vector.flatten(obj.normals);
+
     let buffer = {
         vertices: gl.createBuffer(),
         normals:  gl.createBuffer()
@@ -181,33 +420,6 @@ function render_obj_flat(gl, obj, xform, lights, color) {
         console.log('Failed to create the buffer objects');
         return;
     }
-
-    let normals  = [];
-    let vertices = [];
-    let count    = obj.indices.length;
-    for (let i = 0; i < count / 3; i++) {
-        let i0 = obj.indices[3 * i + 0];
-        let i1 = obj.indices[3 * i + 1];
-        let i2 = obj.indices[3 * i + 2];
-
-        let v0 = obj.vertices[i0];
-        let v1 = obj.vertices[i1];
-        let v2 = obj.vertices[i2];
-
-        let normal = v2.sub(v0).cross(v1.sub(v0)).unit();
-        normal.w   = 0;
-
-        vertices.push(v0);
-        normals.push(normal);
-
-        vertices.push(v1);
-        normals.push(normal);
-
-        vertices.push(v2);
-        normals.push(normal);
-    }
-    normals  = Vector.flatten(normals);
-    vertices = Vector.flatten(vertices);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer.vertices);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);

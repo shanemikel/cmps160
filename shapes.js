@@ -109,6 +109,113 @@ Circle.prototype = {
     },
 };
 
+let Sphere = function(center, radius) {
+    this.center = center.copy();
+    this.radius = radius;
+};
+
+Sphere.prototype = {
+    toPolygons: function(polygon_count, polygon_side_count) {
+        let polygons    = [];
+        let delta_phi   = Math.PI / polygon_count;
+        let delta_theta = 2 * Math.PI / polygon_side_count;
+
+        for (let i = 0; i < polygon_count; i++) {
+            polygons.push([]);
+
+            let polygon = polygons[polygons.length - 1];
+            let phi     = i * delta_phi + delta_phi / 2;
+
+            for (let j = 0; j < polygon_side_count; j++) {
+                let theta = j * delta_theta;
+
+                let x = this.radius * Math.sin(phi) * Math.cos(theta);
+                let y = this.radius * Math.sin(phi) * Math.sin(theta);
+                let z = this.radius * Math.cos(phi);
+
+                x += this.center.x;
+                y += this.center.y;
+                z += this.center.z;
+                polygon.push(new Vector(x, y, z));
+            }
+        }
+        return polygons;
+    },
+
+    toTriangles: function(polygon_count, polygon_side_count) {
+        let obj = {
+            indices:  [],
+            vertices: []
+        };
+        let polygons = this.toPolygons(polygon_count, polygon_side_count);
+
+        let start       = 1;
+        let top         = 0;
+        for (let i = 0; i < polygon_side_count; i++) {
+            let i2 = (i + 1) % polygon_side_count;
+
+            let j  = i  + start;
+            let j2 = i2 + start;
+
+            obj.indices.push(top);
+            obj.indices.push(j);
+            obj.indices.push(j2);
+        }
+        let top_vertex  = new Vector(0, 0, this.radius);
+        let top_polygon = polygons[0];
+        obj.vertices.push(top_vertex);
+        obj.vertices = obj.vertices.concat(top_polygon);
+
+        for (let i = 0; i < polygon_count - 1; i++) {
+            start = 1;
+            if (i > 0)
+                start      = obj.vertices.length;
+            let start_next = start + polygon_side_count;
+
+            for (let j = 0; j < polygon_side_count; j++) {
+                let j2 = (j + 1) % polygon_side_count;
+
+                let k  = j  + start;
+                let k2 = j2 + start;
+                let l  = j  + start_next;
+                let l2 = j2 + start_next;
+
+                obj.indices.push(k);
+                obj.indices.push(l);
+                obj.indices.push(k2);
+
+                obj.indices.push(l2);
+                obj.indices.push(k2);
+                obj.indices.push(l);
+            }
+
+            if (i > 0) {
+                let polygon  = polygons[i];
+                obj.vertices = obj.vertices.concat(polygon);
+            }
+        }
+
+        start      = obj.vertices.length;
+        let bottom = start + polygon_side_count;
+        for (let i = 0; i < polygon_side_count; i++) {
+            let i2 = (i + 1) % polygon_side_count;
+
+            let j  = i  + start;
+            let j2 = i2 + start;
+
+            obj.indices.push(bottom);
+            obj.indices.push(j2);
+            obj.indices.push(j);
+        }
+        let bottom_vertex  = new Vector(0, 0, -this.radius);
+        let bottom_polygon = polygons[polygons.length - 1];
+        obj.vertices = obj.vertices.concat(bottom_polygon);
+        obj.vertices.push(bottom_vertex);
+
+        return obj;
+    },
+};
+
 let Cylinder = function(end1, end2, radius, color) {
     this.end1   = end1.copy();
     this.end2   = end2.copy();
@@ -638,6 +745,21 @@ RGBColor.fromHex = function(hex) {
     return rgb;
 };
 
+RGBColor.flatten = function(arr) {
+    /**  @param arr an Array of RGBColors
+     *   @return a Float32Array (with length: 4 * arr.length)
+     */
+    let res = new Float32Array(arr.length * 4);
+    for (let i = 0; i < arr.length; i++) {
+        res[4 * i + 0] = arr[i].r;
+        res[4 * i + 1] = arr[i].g;
+        res[4 * i + 2] = arr[i].b;
+        res[4 * i + 3] = arr[i].a;
+    }
+    return res;
+};
+
+
 let DirectLight = function(direction, color) {
     this.direction = direction.unit();
     this.color     = color.copy();
@@ -654,4 +776,7 @@ DirectLight.prototype = {
     copy: function() {
         return new DirectLight(this.direction.copy(), this.color.copy());
     },
+};
+
+let PointLight = function(position, color) {
 };
