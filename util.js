@@ -91,10 +91,10 @@ function init_range(args) {
     let range  = $('#' + args.id);
     let label  = $('label[for=' + args.id + ']');
 
-    range.val(args.value);
     range.attr('min'  , args.min);
     range.attr('max'  , args.max);
     range.attr('step' , args.step);
+    range.val(args.value);
 
     range.change(function() {
         label.text('(' + parse(range.val()) + ')');
@@ -112,6 +112,150 @@ function clear(gl, color) {
 
     gl.clearColor(color.r, color.g, color.b, color.a);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+}
+
+function flat_and_gouraud_shaders() {
+    let vert = `#version 100
+        attribute vec4 a_Position;
+        attribute vec4 a_Normal;
+        attribute vec4 a_Color;
+
+        uniform mat4 u_Model;
+        uniform mat4 u_View;
+        uniform mat4 u_Projection;
+
+        uniform vec3 u_LightDirection;
+        uniform vec3 u_LightColor;
+
+        uniform vec3 u_PointLight;
+        uniform vec3 u_PointLightColor;
+
+        varying vec4 v_Color;
+
+        void main(void)
+        {
+            gl_Position = u_Projection * u_View * u_Model * a_Position;
+            vec4 normal = u_Model * a_Normal;
+            v_Color     = a_Color;
+
+            float directIntensity = max(dot(u_LightDirection, normal.xyz), 0.0);
+
+            vec4 pointLight      = u_Model * vec4(u_PointLight, 1.0);
+            vec3 pointDirection  = normalize(a_Position.xyz - pointLight.xyz);
+            float pointIntensity = max(dot(pointDirection, normal.xyz), 0.0);
+
+            vec3 light  = directIntensity * u_LightColor;
+            light      += pointIntensity * u_PointLightColor;
+            v_Color    += vec4(light, 1.0);
+        }`;
+
+    let frag = `#version 100
+        precision mediump float;
+
+        varying vec4 v_Color;
+
+        void main(void)
+        {
+            gl_FragColor = v_Color;
+        }    
+    `;
+
+    return {vert: vert, frag: frag};
+}
+
+function render_scene(gl, shaders_fn, normalize_fn,
+                      model, view, projection, obj, lights)
+{
+    let color   = obj.color ? obj.color.copy() : WHITE.copy();
+    let shaders = shaders_fn();
+    let vert    = shaders.vert;
+    let frag    = shaders.frag;
+
+    INIT_SHADERS(gl, vert, frag)
+    GET_ATTRIBUTE(a_Position, gl, 'a_Position')
+    GET_ATTRIBUTE(a_Normal,   gl, 'a_Normal')
+    GET_ATTRIBUTE(a_Color,    gl, 'a_Color')
+
+    GET_UNIFORM(u_Model,           gl, 'u_Model')
+    GET_UNIFORM(u_View,            gl, 'u_View')
+    GET_UNIFORM(u_Projection,      gl, 'u_Projection')
+
+    GET_UNIFORM(u_LightDirection,  gl, 'u_LightDirection')
+    GET_UNIFORM(u_LightColor,      gl, 'u_LightColor')
+
+    GET_UNIFORM(u_PointLight,      gl, 'u_PointLight')
+    GET_UNIFORM(u_PointLightColor, gl, 'u_PointLightColor')
+
+    let direct_light;
+    if (lights.direct !== undefined)
+        direct_light = lights.direct;
+    else
+        direct_light = new DirectLight(new Vector(0, 0, 0), new RGBColor(0, 0, 0));
+
+    let dl_dir       = direct_light.getDirection();
+    let dl_col       = direct_light.getColor();
+
+    let point_light;
+    if (lights.point !== undefined)
+        point_light  = lights.point;
+    else
+        point_light  = new PointLight(new Vector(0, 0, 0), new RGBColor(0, 0, 0));
+
+    let pl_pos       = point_light.getPosition();
+    let pl_col       = point_light.getColor();
+
+    color = color.scale(lights.ambiant);
+    
+    gl.uniformMatrix4fv(u_Model, false, model.transpose().data);
+    gl.uniformMatrix4fv(u_View, false, view.transpose().data);
+    gl.uniformMatrix4fv(u_Projection, false, projection.transpose().data);
+
+    gl.uniform3f(u_LightDirection, dl_dir.x, dl_dir.y, dl_dir.z);
+    gl.uniform3f(u_LightColor, dl_col.r, dl_col.g, dl_col.b);
+
+    gl.uniform3f(u_PointLight, pl_pos.x, pl_pos.y, pl_pos.z);
+    gl.uniform3f(u_PointLightColor, pl_col.r, pl_col.g, pl_col.b);
+
+    let count = obj.indices.length;
+    obj       = normalize_fn(obj);
+
+    let vertices = Vector.flatten(obj.vertices);
+    let normals  = Vector.flatten(obj.normals);
+
+    let buffer = {
+        vertices: gl.createBuffer(),
+        normals:  gl.createBuffer(),
+        colors:   gl.createBuffer()
+    };
+    if (! buffer.vertices || ! buffer.normals || ! buffer.colors) {
+        console.log('Failed to create the buffer objects');
+        return;
+    }
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.vertices);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(a_Position, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Position);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.normals);
+    gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(a_Normal, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Normal);
+
+    let colors = [];
+    for (let i = 0; i < count; i++)
+        colors.push(color.copy());
+    colors = RGBColor.flatten(colors);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.colors);
+    gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(a_Color, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Color);
+
+    gl.drawArrays(gl.TRIANGLES, 0, count);
+
+    gl.deleteBuffer(buffer.normals);
+    gl.deleteBuffer(buffer.vertices);
 }
 
 function normalize_obj_interpolated(obj) {
@@ -174,148 +318,6 @@ function normalize_obj_interpolated(obj) {
     return {vertices: vertices, normals: normals};
 }
 
-function render_obj_phong(gl, obj, xform, lights, color) {
-    // TODO not yet implemented (currently identical to gouraud)
-
-    let VSHADER = `#version 100
-        attribute vec4 a_Position;
-        attribute vec4 a_Normal;
-        attribute vec4 a_Color;
-
-        uniform mat4 u_Transform;
-        uniform vec3 u_LightDirection;
-        uniform vec3 u_LightColor;
-
-        varying vec4 v_Color;
-
-        void main(void)
-        {
-            gl_Position = u_Transform * a_Position;
-            vec4 normal = u_Transform * a_Normal;
-
-            v_Color         = a_Color;
-            float intensity = max(dot(u_LightDirection, normal.xyz), 0.0);
-
-            vec3 light  = intensity * u_LightColor;
-            v_Color    += vec4(light, 1.0);
-        }`;
-
-    let FSHADER = `#version 100
-        precision mediump float;
-
-        varying vec4 v_Color;
-
-        void main(void)
-        {
-            gl_FragColor = v_Color;
-        }    
-    `;
-
-    render_obj_interpolated(VSHADER, FSHADER, gl, obj, xform, lights, color);
-}
-
-function render_obj_gouraud(gl, obj, xform, lights, color) {
-    let VSHADER = `#version 100
-        attribute vec4 a_Position;
-        attribute vec4 a_Normal;
-        attribute vec4 a_Color;
-
-        uniform mat4 u_Transform;
-        uniform vec3 u_LightDirection;
-        uniform vec3 u_LightColor;
-
-        varying vec4 v_Color;
-
-        void main(void)
-        {
-            gl_Position = u_Transform * a_Position;
-            vec4 normal = u_Transform * a_Normal;
-
-            v_Color         = a_Color;
-            float intensity = max(dot(u_LightDirection, normal.xyz), 0.0);
-
-            vec3 light  = intensity * u_LightColor;
-            v_Color    += vec4(light, 1.0);
-        }`;
-
-    let FSHADER = `#version 100
-        precision mediump float;
-
-        varying vec4 v_Color;
-
-        void main(void)
-        {
-            gl_FragColor = v_Color;
-        }    
-    `;
-
-    render_obj_interpolated(VSHADER, FSHADER, gl, obj, xform, lights, color);
-}
-
-function render_obj_interpolated(vert, frag, gl, obj, xform, lights, color) {
-    color = color ? color.copy() : WHITE.copy();
-
-    INIT_SHADERS(gl, vert, frag)
-    GET_ATTRIBUTE(a_Position, gl, 'a_Position')
-    GET_ATTRIBUTE(a_Normal,   gl, 'a_Normal')
-    GET_ATTRIBUTE(a_Color,    gl, 'a_Color')
-
-    GET_UNIFORM(u_Transform,      gl, 'u_Transform')
-    GET_UNIFORM(u_LightDirection, gl, 'u_LightDirection')
-    GET_UNIFORM(u_LightColor,     gl, 'u_LightColor')
-
-    let direct_light   = lights.direct;
-    let dl_dir         = direct_light.getDirection();
-    let dl_col         = direct_light.getColor();
-
-    color = color.scale(lights.ambiant);
-    
-    gl.uniformMatrix4fv(u_Transform, false, xform.transpose().data);
-    gl.uniform3f(u_LightDirection, dl_dir.x, dl_dir.y, dl_dir.z);
-    gl.uniform3f(u_LightColor, dl_col.r, dl_col.g, dl_col.b);
-
-    let count = obj.indices.length;
-    obj       = normalize_obj_interpolated(obj);
-
-    let vertices = Vector.flatten(obj.vertices);
-    let normals  = Vector.flatten(obj.normals);
-
-    let buffer = {
-        vertices: gl.createBuffer(),
-        normals:  gl.createBuffer(),
-        colors:   gl.createBuffer()
-    };
-    if (! buffer.vertices || ! buffer.normals || ! buffer.colors) {
-        console.log('Failed to create the buffer objects');
-        return;
-    }
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.vertices);
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
-    gl.vertexAttribPointer(a_Position, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_Position);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.normals);
-    gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STREAM_DRAW);
-    gl.vertexAttribPointer(a_Normal, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_Normal);
-
-    let colors = [];
-    for (let i = 0; i < count; i++)
-        colors.push(color.copy());
-    colors = RGBColor.flatten(colors);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.colors);
-    gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STREAM_DRAW);
-    gl.vertexAttribPointer(a_Color, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_Color);
-
-    gl.drawArrays(gl.TRIANGLES, 0, count);
-
-    gl.deleteBuffer(buffer.normals);
-    gl.deleteBuffer(buffer.vertices);
-}
-
 function normalize_obj_flat(obj) {
     /**  Make a Vertices+Normals OBJ from a Indices+Vertices OBJ
      *   @param obj.indices the index array
@@ -347,94 +349,6 @@ function normalize_obj_flat(obj) {
         normals.push(normal);
     }
     return {vertices: vertices, normals: normals};
-}
-
-function render_obj_flat(gl, obj, xform, lights, color) {
-    color = color ? color.copy() : WHITE.copy();
-
-    let VSHADER = `#version 100
-        attribute vec4 a_Position;
-        attribute vec4 a_Normal;
-
-        uniform mat4 u_Transform;
-        uniform vec4 u_FaceColor;
-        uniform vec3 u_LightDirection;
-        uniform vec3 u_LightColor;
-
-        varying vec4 v_Color;
-
-        void main(void)
-        {
-            gl_Position = u_Transform * a_Position;
-            vec4 normal = u_Transform * a_Normal;
-
-            v_Color         = u_FaceColor;
-            float intensity = dot(u_LightDirection, normal.xyz);
-
-            vec3 light  = intensity * u_LightColor;
-            v_Color    += vec4(light, 1.0);
-        }`;
-
-    let FSHADER = `#version 100
-        precision mediump float;
-
-        varying vec4 v_Color;
-
-        void main(void)
-        {
-            gl_FragColor = v_Color;
-        }    
-    `;
-
-    INIT_SHADERS(gl, VSHADER, FSHADER)
-    GET_ATTRIBUTE(a_Position, gl, 'a_Position')
-    GET_ATTRIBUTE(a_Normal,   gl, 'a_Normal')
-
-    GET_UNIFORM(u_Transform,      gl, 'u_Transform')
-    GET_UNIFORM(u_FaceColor,      gl, 'u_FaceColor')
-    GET_UNIFORM(u_LightDirection, gl, 'u_LightDirection')
-    GET_UNIFORM(u_LightColor,     gl, 'u_LightColor')
-
-    let direct_light   = lights.direct;
-    let dl_dir         = direct_light.getDirection();
-    let dl_col         = direct_light.getColor();
-
-    color = color.scale(lights.ambiant);
-    
-    gl.uniformMatrix4fv(u_Transform, false, xform.transpose().data);
-    gl.uniform4f(u_FaceColor, color.r, color.g, color.b, color.a);
-    gl.uniform3f(u_LightDirection, dl_dir.x, dl_dir.y, dl_dir.z);
-    gl.uniform3f(u_LightColor, dl_col.r, dl_col.g, dl_col.b);
-
-    let count = obj.indices.length;
-    obj       = normalize_obj_flat(obj);
-
-    let vertices = Vector.flatten(obj.vertices);
-    let normals  = Vector.flatten(obj.normals);
-
-    let buffer = {
-        vertices: gl.createBuffer(),
-        normals:  gl.createBuffer()
-    };
-    if (! buffer.vertices || ! buffer.normals) {
-        console.log('Failed to create the buffer objects');
-        return;
-    }
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.vertices);
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
-    gl.vertexAttribPointer(a_Position, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_Position);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.normals);
-    gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STREAM_DRAW);
-    gl.vertexAttribPointer(a_Normal, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_Normal);
-
-    gl.drawArrays(gl.TRIANGLES, 0, count);
-
-    gl.deleteBuffer(buffer.normals);
-    gl.deleteBuffer(buffer.vertices);
 }
 
 function render_obj(gl, mode, obj, xform, color) {

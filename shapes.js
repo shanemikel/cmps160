@@ -762,6 +762,7 @@ RGBColor.flatten = function(arr) {
 
 let DirectLight = function(direction, color) {
     this.direction = direction.unit();
+    direction.w    = 0;
     this.color     = color.copy();
 };
 
@@ -779,4 +780,19 @@ DirectLight.prototype = {
 };
 
 let PointLight = function(position, color) {
+    this.position = position.copy();
+    this.color    = color.copy();
+};
+
+PointLight.prototype = {
+    getPosition: function() {
+        return this.position.copy();
+    },
+    getColor: function() {
+        return this.color.copy();
+    },
+
+    copy: function() {
+        return new PointLight(this.position.copy(), this.color.copy());
+    },
 };

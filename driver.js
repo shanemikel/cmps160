@@ -24,10 +24,24 @@ let TRANSLATE_X      = null;
 let TRANSLATE_Y      = null;
 let TRANSLATE_Z      = null;
 
-let CAMERA_EYE       = new Vector(0, 0, 350);
-let CAMERA_CENTER    = ORIGIN;
-let CAMERA_UP        = new Vector(0, 1,   0);
+let CAMERA           = 1;
 
+let CAMERA_1_EYE     = new Vector(0, 0, 350);
+let CAMERA_1_CENTER  = ORIGIN;
+let CAMERA_1_UP      = new Vector(0, 1,   0);
+
+let CAMERA_2_EYE     = new Vector(100,    50,  350);
+let CAMERA_2_CENTER  = new Vector(-400, -100, -100);
+let CAMERA_2_UP      = new Vector(0,       1,    0);
+
+let PROJECTION_NEAR  = null;
+let PROJECTION_FAR   = null;
+
+let projection = {
+    ORTHOGRAPHIC: 'projection-orthographic',
+    PERSPECTIVE:  'projection-perspective'
+};
+let PROJECTION = projection.PERSPECTIVE;
 
 let shading = {
     FLAT:    'shading-flat',
@@ -119,17 +133,86 @@ function start(gl) {
     INIT_TRANSLATE_SLIDER(TRANSLATE_Y, 'translate-y', update(gl))
     INIT_TRANSLATE_SLIDER(TRANSLATE_Z, 'translate-z', update(gl))
 
-    $('#' + SHADING).attr('checked', 'checked');
+    init_range({
+        id: 'projection-near',
+        value: 1,
+        min: 0,
+        max: 100,
+        step: 1,
+        parse: function(value) {
+            PROJECTION_NEAR = parseInt(value);
+            value           = value.toString();
+            switch (value.length) {
+            case 1:
+                value = '00' + value;
+                break;
+            case 2:
+                value =  '0' + value;
+                break;
+            }
+            return value;
+        },
+        update: function() {
+            update(gl);
+        }
+    });
+
+    init_range({
+        id: 'projection-far',
+        value: 500,
+        min: 100,
+        max: 1000,
+        step: 5,
+        parse: function(value) {
+            PROJECTION_FAR = parseInt(value);
+            value          = value.toString();
+            switch (value.length) {
+            case 1:
+                value = '000' + value;
+                break;
+            case 2:
+                value =  '00' + value;
+                break;
+            case 3:
+                value =   '0' + value;
+                break;
+            }
+            return value;
+        },
+        update: function() {
+            update(gl);
+        }
+    });
+
+    $('#' + PROJECTION).prop('checked', true);
+    $('form#projection input[name=projection]').on('change', function(e) {
+        let elem   = $(e.target);
+        PROJECTION = elem.attr('id');
+        update(gl);
+    });
+
+    $('#' + SHADING).prop('checked', true);
     $('form#shading-type input[name=shading-type]').on('change', function(e) {
         let elem = $(e.target);
         SHADING  = elem.attr('id');
         update(gl);
     });
 
-    $('#' + SHAPE).attr('checked', 'checked');
+    $('#' + SHAPE).prop('checked', true);
     $('form#shape-type input[name=shape-type]').on('change', function(e) {
         let elem = $(e.target);
         SHAPE    = elem.attr('id');
+        update(gl);
+    });
+
+    $('button#camera-1').click(function(e) {
+        e.preventDefault();
+        CAMERA = 1;
+        update(gl);
+    });
+    $('button#camera-2').click(function(e) {
+        e.preventDefault();
+        CAMERA = 2;
         update(gl);
     });
 
@@ -148,44 +231,52 @@ function update(gl, mouse_xy) {
         model   = model.translate(vec);
     }
 
-    let view = Matrix.lookAt({
-        eye:     CAMERA_EYE,
-        center:  CAMERA_CENTER,
-        up:      CAMERA_UP
-    });
+    let view;
 
-    let projection;
-    if (false) {
-        render_grid(gl, DARK_GREY);
-        projection = Matrix.ortho({
+    switch (CAMERA) {
+    case 1:
+        view = Matrix.lookAt({
+            eye:     CAMERA_1_EYE,
+            center:  CAMERA_1_CENTER,
+            up:      CAMERA_1_UP
+        });
+        break;
+    case 2:
+        view = Matrix.lookAt({
+            eye:     CAMERA_2_EYE,
+            center:  CAMERA_2_CENTER,
+            up:      CAMERA_2_UP
+        });
+        break;
+    }
+
+    let lights     = {};
+    lights.ambiant = 0.1;
+    lights.direct  = new DirectLight(new Vector(0, 0, -1), BLUE.scale(0.5));
+    lights.point   = new PointLight(new Vector(0, 200, 200), BLUE.scale(0.8));
+
+    let proj;
+
+    switch (PROJECTION) {
+    case projection.ORTHOGRAPHIC:
+        proj = Matrix.ortho({
             left: -250,
             right: 250,
             bottom: -250,
             top: 250,
-            near: 1,
-            far: 1000
+            near: PROJECTION_NEAR,
+            far: PROJECTION_FAR
         });
-    } else {
-        projection = Matrix.perspective({
+        break;
+    case projection.PERSPECTIVE:
+        proj = Matrix.perspective({
             fovy: Radians.fromDegrees(60),
             aspect: 1,
-            near: 1,
-            far: 1000
+            near: PROJECTION_NEAR,
+            far: PROJECTION_FAR
         });
+        break;
     }
-
-    let mvp = projection.multiply(view).multiply(model);
-
-    let lights = {};
-
-    if (true)
-        lights.ambiant = 0.1;
-
-    if (true)
-        lights.direct = new DirectLight(new Vector(0, 0, -1, 0), BLUE.scale(0.6));
-
-    if (true)
-        lights.point = new PointLight(new Vector(0, 200, 200), WHITE.scale(0.6));
 
     let obj;
     switch (SHAPE) {
@@ -204,15 +295,19 @@ function update(gl, mouse_xy) {
         break;
     }
 
+    obj.color = BLUE.copy();
+
     switch (SHADING) {
     case shading.FLAT:
-        render_obj_flat(gl, obj, mvp, lights, BLUE);
+        render_scene(gl, flat_and_gouraud_shaders, normalize_obj_flat,
+                     model, view, proj, obj, lights);
         break;
     case shading.GOURAUD:
-        render_obj_gouraud(gl, obj, mvp, lights, BLUE);
+        render_scene(gl, flat_and_gouraud_shaders, normalize_obj_interpolated,
+                     model, view, proj, obj, lights);
         break;
     case shading.PHONG:
-        render_obj_phong(gl, obj, mvp, lights, BLUE);
+        console.log('Phong shading is not yet implemented');
         break;
     }
 }

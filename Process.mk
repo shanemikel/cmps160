@@ -15,14 +15,15 @@ HTM_OUT	  = $(MAIN:=.html)
 ALL_OUT	  = $(JS_OUT) $(LESS_OUT) $(HTM_OUT)
 
 DIST      = $(PROJECT).tar.gz
+FEATURES  = $(wildcard features.html)
 
 .PHONY: all watch clean dist count
 
 all: $(MAIN:=.jsc) $(MAIN:=.css) $(MAIN:=.html)
 
 $(MAIN:=.jsc): %: $(JS_LIBS:=.js)
-features.css $(MAIN:=.css): %: $(LESS_LIBS:=.less)
-features.html $(MAIN:=.html): %: $(HTM_LIBS:=.htm)
+$(MAIN:=.css): %: $(LESS_LIBS:=.less)
+$(MAIN:=.html): %: $(HTM_LIBS:=.htm)
 
 watch:
 	$(MAKE) -s all
@@ -34,7 +35,7 @@ clean:
 dist: $(DIST)
 
 $(DIST): $(ALL_OUT) lib
-	tar --xform "s/^/$(PROJECT)\//" -czhf $@ $^ $(VENDOR_DIR)
+	tar --xform "s/^/$(PROJECT)\//" -czhf $@ $^ $(VENDOR_DIR) $(FEATURES)
 
 count:
 	wc $(ALL_SRC)

@@ -75,6 +75,30 @@
 	<label for="translate-z"></label>
       </span>
     </div>
+    <div class="group">
+      <form id="projection">
+	<span class="group">
+	  <input id="projection-orthographic" name="projection" type="radio" />
+	  <label for="projection-orthographic">Orthographic</label>
+	  <input id="projection-perspective" name="projection" type="radio" />
+	  <label for="projection-perspective">Perspective</label>
+	</span>
+	<span class="group">
+	  <button id="camera-1">Camera 1</button>
+	  <button id="camera-2">Camera 2</button>
+	</span>
+      </form>
+    </div>
+    <div class="group">
+      <span class="group">
+	Near <input id="projection-near" type="range"></input>
+	<label for="projection-near"></label>
+      </span>
+      <span class="group">
+	Far <input id="projection-far" type="range"></input>
+	<label for="projection-far"></label>
+      </span>
+    </div>
   </div>
   <div id="lighting" class="tab">
     <form id="light-type">
@@ -104,12 +128,8 @@
 	<span class="group">
 	  <input id="shading-flat" name="shading-type" type="radio" />
 	  <label for="shading-flat">Flat</label>
-	</span>
-	<span class="group">
 	  <input id="shading-gouraud" name="shading-type" type="radio" />
 	  <label for="shading-gouraud">Gouraud</label>
-	</span>
-	<span class="group">
 	  <input id="shading-phong" name="shading-type" type="radio" />
 	  <label for="shading-phong">Phong</label>
 	</span>
