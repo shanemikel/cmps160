@@ -2,40 +2,54 @@
 #include "collections.js"
 #include "util.js"
 
+let WHITE         = null;
+let BLACK         = null;
+let RED           = null;
+let GREEN         = null;
+let BLUE          = null;
+let GREY          = null;
+let DARK_GREY     = null;
+let LIGHT_GREY    = null;
 
-let WHITE            = null;
-let BLACK            = null;
-let RED              = null;
-let GREEN            = null;
-let BLUE             = null;
-let GREY             = null;
-let DARK_GREY        = null;
-let LIGHT_GREY       = null;
+let CANVAS        = null;
+let WIDTH         = null;
+let HEIGHT        = null;
+let COLOR         = null;
 
-let CANVAS           = null;
-let WIDTH            = null;
-let HEIGHT           = null;
-let COLOR            = null;
+let ROTATE_X      = 0;
+let ROTATE_Y      = 0;
+let ROTATE_Z      = 0;
 
-let ROTATE_X         = null;
-let ROTATE_Y         = null;
-let ROTATE_Z         = null;
-let TRANSLATE_X      = null;
-let TRANSLATE_Y      = null;
-let TRANSLATE_Z      = null;
+let TRANSLATE_X   = 0;
+let TRANSLATE_Y   = 0;
+let TRANSLATE_Z   = 0;
 
-let CAMERA           = 1;
+let CAMERA_EYE    = new Vector(0, 0, 350);
+let CAMERA_CENTER = ORIGIN;
+let CAMERA_UP     = new Vector(0, 1,   0);
 
-let CAMERA_1_EYE     = new Vector(0, 0, 350);
-let CAMERA_1_CENTER  = ORIGIN;
-let CAMERA_1_UP      = new Vector(0, 1,   0);
+let AMBIANT_COLOR = TRUE_WHITE.scale(0.15);
 
-let CAMERA_2_EYE     = new Vector(100,    50,  350);
-let CAMERA_2_CENTER  = new Vector(-400, -100, -100);
-let CAMERA_2_UP      = new Vector(0,       1,    0);
+let DIRECT_X      = 0;
+let DIRECT_Y      = -100;
+let DIRECT_Z      = -100;
+let DIRECT_COLOR  = TRUE_WHITE.scale(0.8);
 
-let PROJECTION_NEAR  = null;
-let PROJECTION_FAR   = null;
+let POINT_X       = 250;
+let POINT_Y       = 150;
+let POINT_Z       = 250;
+let POINT_COLOR   = TRUE_WHITE.scale(0.8);
+
+let light = {
+    AMBIANT: 'light-ambiant',
+    DIRECT:  'light-direct',
+    POINT:   'light-point'
+};
+let LIGHT = {
+    ambiant: true,
+    direct:  true,
+    point:   false
+};
 
 let projection = {
     ORTHOGRAPHIC: 'projection-orthographic',
@@ -87,7 +101,10 @@ function init() {
 
         e.children('label').each(function(i, elem) {
             let label_for = $(elem).attr('for');
-            $(elem).click(() => set_current_tab(e, label_for));
+            $(elem).click(function(ev) {
+                if ($(ev.target).attr('data-disabled') !== 'disabled')
+                    set_current_tab(e, label_for)
+            });
         });
     });
 }
@@ -125,69 +142,49 @@ function main() {
 function start(gl) {
     gl.enable(gl.DEPTH_TEST);
 
-    INIT_ROTATE_SLIDER(ROTATE_X, 'rotate-x', update(gl))
-    INIT_ROTATE_SLIDER(ROTATE_Y, 'rotate-y', update(gl))
-    INIT_ROTATE_SLIDER(ROTATE_Z, 'rotate-z', update(gl))
+    init_angle_slider(GETTER_SETTER(ROTATE_X), 'rotate-x', UPDATE_GL);
+    init_angle_slider(GETTER_SETTER(ROTATE_Y), 'rotate-y', UPDATE_GL);
+    init_angle_slider(GETTER_SETTER(ROTATE_Z), 'rotate-z', UPDATE_GL);
 
-    INIT_TRANSLATE_SLIDER(TRANSLATE_X, 'translate-x', update(gl))
-    INIT_TRANSLATE_SLIDER(TRANSLATE_Y, 'translate-y', update(gl))
-    INIT_TRANSLATE_SLIDER(TRANSLATE_Z, 'translate-z', update(gl))
-
-    init_range({
-        id: 'projection-near',
-        value: 1,
-        min: 0,
-        max: 100,
-        step: 1,
-        parse: function(value) {
-            PROJECTION_NEAR = parseInt(value);
-            value           = value.toString();
-            switch (value.length) {
-            case 1:
-                value = '00' + value;
-                break;
-            case 2:
-                value =  '0' + value;
-                break;
-            }
-            return value;
-        },
-        update: function() {
-            update(gl);
-        }
-    });
-
-    init_range({
-        id: 'projection-far',
-        value: 500,
-        min: 100,
-        max: 1000,
-        step: 5,
-        parse: function(value) {
-            PROJECTION_FAR = parseInt(value);
-            value          = value.toString();
-            switch (value.length) {
-            case 1:
-                value = '000' + value;
-                break;
-            case 2:
-                value =  '00' + value;
-                break;
-            case 3:
-                value =   '0' + value;
-                break;
-            }
-            return value;
-        },
-        update: function() {
-            update(gl);
-        }
-    });
+    init_coord_slider(GETTER_SETTER(TRANSLATE_X), 'translate-x', UPDATE_GL);
+    init_coord_slider(GETTER_SETTER(TRANSLATE_Y), 'translate-y', UPDATE_GL);
+    init_coord_slider(GETTER_SETTER(TRANSLATE_Z), 'translate-z', UPDATE_GL);
 
     $('#' + PROJECTION).prop('checked', true);
     $('form#projection input[name=projection]').on('change', function(e) {
         let elem   = $(e.target);
         PROJECTION = elem.attr('id');
+        update(gl);
+    });
+
+    init_color_picker(GETTER_SETTER(AMBIANT_COLOR), 'light-ambiant-color', UPDATE_GL);
+
+    init_direc_slider(GETTER_SETTER(DIRECT_X), 'light-direct-x', UPDATE_GL);
+    init_direc_slider(GETTER_SETTER(DIRECT_Y), 'light-direct-y', UPDATE_GL);
+    init_direc_slider(GETTER_SETTER(DIRECT_Z), 'light-direct-z', UPDATE_GL);
+
+    init_color_picker(GETTER_SETTER(DIRECT_COLOR), 'light-direct-color', UPDATE_GL);
+
+    init_coord_slider(GETTER_SETTER(POINT_X), 'light-point-x', UPDATE_GL);
+    init_coord_slider(GETTER_SETTER(POINT_Y), 'light-point-y', UPDATE_GL);
+    init_coord_slider(GETTER_SETTER(POINT_Z), 'light-point-z', UPDATE_GL);
+    init_color_picker(GETTER_SETTER(POINT_COLOR), 'light-point-color', UPDATE_GL);
+
+    $('#' + light.AMBIANT).prop('checked', LIGHT.ambiant);
+    $('#' + light.AMBIANT).on('change', function(e) {
+        LIGHT.ambiant = $(e.target).prop('checked');
+        update(gl);
+    });
+
+    $('#' + light.DIRECT).prop('checked', LIGHT.direct);
+    $('#' + light.DIRECT).on('change', function(e) {
+        LIGHT.direct = $(e.target).prop('checked');
+        update(gl);
+    });
+
+    $('#' + light.POINT).prop('checked', LIGHT.point);
+    $('#' + light.POINT).on('change', function(e) {
+        LIGHT.point = $(e.target).prop('checked');
         update(gl);
     });
 
@@ -205,19 +202,105 @@ function start(gl) {
         update(gl);
     });
 
-    $('button#camera-1').click(function(e) {
-        e.preventDefault();
-        CAMERA = 1;
-        update(gl);
-    });
-    $('button#camera-2').click(function(e) {
-        e.preventDefault();
-        CAMERA = 2;
-        update(gl);
-    });
-
     update(gl);
 }
+
+function init_angle_slider(var_fn, range_id, render_fn) {
+    init_range({
+        id: range_id,
+        value: var_fn(),
+        min: -180,
+        max: 180,
+        step: 10,
+
+        parse: function(value) {
+            var_fn(parseInt(value));
+            value = Math.abs(var_fn()).toString();
+            switch (value.length) {
+            case 1:
+                value = '00' + value;
+                break;
+            case 2:
+                value =  '0' + value;
+                break;
+            }
+            if (var_fn() >= 0)
+                value = '+' + value;
+            else
+                value = '-' + value;
+            return value;
+        },
+
+        update: function() {
+            render_fn();
+        }
+    });
+}
+
+function init_coord_slider(var_fn, range_id, render_fn) {
+    init_range({
+        id: range_id,
+        value: var_fn(),
+        min: -250,
+        max: 250,
+        step: 5,
+
+        parse: function(value) {
+            var_fn(parseInt(value));
+            value = Math.abs(var_fn()).toString();
+            switch (value.length) {
+            case 1:
+                value = '00' + value;
+                break;
+            case 2:
+                value =  '0' + value;
+                break;
+            }
+            if (var_fn() >= 0)
+                value = '+' + value;
+            else
+                value = '-' + value;
+            return value;
+        },
+
+        update: function() {
+            render_fn();
+        }
+    });
+}
+
+function init_direc_slider(var_fn, range_id, render_fn) {
+    init_range({
+        id: range_id,
+        value: var_fn(),
+        min: -100,
+        max: 100,
+        step: 1,
+
+        parse: function(value) {
+            var_fn(parseInt(value));
+            value = Math.abs(var_fn()).toString();
+            switch (value.length) {
+            case 1:
+                value = '00' + value;
+                break;
+            case 2:
+                value =  '0' + value;
+                break;
+            }
+            if (var_fn() >= 0)
+                value = '+' + value;
+            else
+                value = '-' + value;
+            return value;
+        },
+
+        update: function() {
+            render_fn();
+        }
+    });
+}
+
 
 function update(gl, mouse_xy) {
     clear(gl, COLOR);
@@ -231,29 +314,11 @@ function update(gl, mouse_xy) {
         model   = model.translate(vec);
     }
 
-    let view;
-
-    switch (CAMERA) {
-    case 1:
-        view = Matrix.lookAt({
-            eye:     CAMERA_1_EYE,
-            center:  CAMERA_1_CENTER,
-            up:      CAMERA_1_UP
-        });
-        break;
-    case 2:
-        view = Matrix.lookAt({
-            eye:     CAMERA_2_EYE,
-            center:  CAMERA_2_CENTER,
-            up:      CAMERA_2_UP
-        });
-        break;
-    }
-
-    let lights     = {};
-    lights.ambiant = 0.1;
-    lights.direct  = new DirectLight(new Vector(0, 0, -1), BLUE.scale(0.5));
-    lights.point   = new PointLight(new Vector(0, 200, 200), BLUE.scale(0.8));
+    let view = Matrix.lookAt({
+        eye:     CAMERA_EYE,
+        center:  CAMERA_CENTER,
+        up:      CAMERA_UP
+    });
 
     let proj;
 
@@ -264,16 +329,16 @@ function update(gl, mouse_xy) {
             right: 250,
             bottom: -250,
             top: 250,
-            near: PROJECTION_NEAR,
-            far: PROJECTION_FAR
+            near: 1,
+            far: 1000
         });
         break;
     case projection.PERSPECTIVE:
         proj = Matrix.perspective({
             fovy: Radians.fromDegrees(60),
             aspect: 1,
-            near: PROJECTION_NEAR,
-            far: PROJECTION_FAR
+            near: 1,
+            far: 1000
         });
         break;
     }
@@ -295,16 +360,36 @@ function update(gl, mouse_xy) {
         break;
     }
 
-    obj.color = BLUE.copy();
+    obj.color      = new RGBColor(0.2, 0.2, 1.0);
+    obj.model      = model;
+    obj.view       = view;
+    obj.projection = proj;
+
+    let lights = {};
+
+    if (LIGHT.ambiant)
+        lights.ambiant = new AmbiantLight(AMBIANT_COLOR);
+    else
+        lights.ambiant = null;
+
+    if (LIGHT.direct)
+        lights.direct  = new DirectLight(new Vector(DIRECT_X, DIRECT_Y, DIRECT_Z),
+                                         DIRECT_COLOR);
+    else
+        lights.direct  = null;
+
+    if (LIGHT.point)
+        lights.point   = new PointLight(new Vector(POINT_X, POINT_Y, POINT_Z),
+                                        POINT_COLOR);
+    else
+        lights.point   = null;
 
     switch (SHADING) {
     case shading.FLAT:
-        render_scene(gl, flat_and_gouraud_shaders, normalize_obj_flat,
-                     model, view, proj, obj, lights);
+        render_flat(gl, obj, lights);
         break;
     case shading.GOURAUD:
-        render_scene(gl, flat_and_gouraud_shaders, normalize_obj_interpolated,
-                     model, view, proj, obj, lights);
+        render_gouraud(gl, obj, lights);
         break;
     case shading.PHONG:
         console.log('Phong shading is not yet implemented');

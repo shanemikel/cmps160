@@ -33,18 +33,31 @@ label
 @button-color:                  @widget-color;
 @button-border-color:           @highlight-color;
 @disabled-button-color:         lighten(@button-color, 4%);
+@disabled-button-text-color:    darken(@text-color, 8%);
 @disabled-button-border-color:  lighten(@button-border-color, 8%);
 @button-border-size:            2px;
 @button-radius:                 3px;
 
-.button()
+.button(@color: @button-color; @border-color: @button-border-color)
 {
     padding: 2px 4px 2px 4px;
-    background-color: @button-color;
+    background-color: @color;
     font-family: @monospace-font;
 
-    border: @button-border-size solid @button-border-color;
+    border: @button-border-size solid @border-color;
     border-radius: @button-radius;
+
+    outline: 0;
+
+    &:hover
+    {
+        border-color: lighten(@border-color, 8%);
+    }
+
+    &:active
+    {
+        background-color: darken(@color, 5%);
+    }
 }
 
 button
@@ -52,10 +65,16 @@ button
     .button();
 }
 
-button[disabled]
+.button-disabled()
 {
+    color: @disabled-button-text-color;
     background-color: @disabled-button-color;
     border: @button-border-size solid @disabled-button-border-color;
+}
+
+button[disabled]
+{
+    .button-disabled();
 }
 
 
@@ -89,6 +108,11 @@ input[type='checkbox']
         .button();
 
         display: inline-block;
+    }
+
+    &:disabled + label
+    {
+        .button-disabled();
     }
 
     &:checked + label
@@ -157,6 +181,12 @@ input[type='range']
         .track();
     }
 
+    &:disabled::-webkit-slider-runnable-track
+    {
+        background: @disabled-button-color;
+        border-color: @disabled-button-border-color;
+    }
+
     &::-webkit-slider-thumb
     {
         -webkit-appearance: none;
@@ -166,6 +196,30 @@ input[type='range']
         margin-top: @margin;
         margin-bottom: @margin;
     }
+
+    &:disabled::-webkit-slider-thumb
+    {
+        background: @disabled-button-color;
+        border-color: @disabled-button-border-color;
+    }
+}
+
+input[type="text"]
+{
+    .button(lighten(@button-color, 20%); lighten(@button-border-color, 10%));
+
+    color: @button-border-color;
+    font-family: @proportional-font;
+    width: 80px;
+}
+
+input[type="color"]
+{
+    .button();
+
+    width: 40px;
+    padding: 0;
+    margin: 0 8px 0 8px;
 }
 
 
@@ -195,8 +249,13 @@ input[type='range']
 }
 
 
-span.spacer
+.spacer(@size)
 {
     display: inline-block;
-    --size: 5px;
+    --size: @size;
+}
+
+span.spacer
+{
+    .spacer(5px);
 }

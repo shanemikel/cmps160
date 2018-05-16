@@ -75,7 +75,7 @@
 
 @webgl-width:             500px;
 @webgl-height:            500px;
-@webgl-background-color:  @black;
+@webgl-background-color:  black;
 
 #g-webgl
 {
@@ -104,15 +104,18 @@
 @disabled-widget-color:     lighten(@widget-color, 4%);
 @disabled-highlight-color:  darken(@highlight-color, 5%);
 
-@tab-space:                    1px;
-@tab-color:                    @button-color;
-@tab-highlight-color:          @button-border-color;
-@tab-text-color:               @text-color;
-@current-tab-color:            @black;
-@current-tab-highlight-color:  @disabled-button-border-color;
-@current-tab-text-color:       @text-color;
-@tab-border-size:              3px;
-@tab-border-radius:            4px;
+@tab-space:                     1px;
+@tab-color:                     @button-color;
+@tab-highlight-color:           @button-border-color;
+@tab-text-color:                @text-color;
+@disabled-tab-color:            lighten(@tab-color, 4%);
+@disabled-tab-text-color:       darken(@tab-text-color, 8%);
+@disabled-tab-highlight-color:  lighten(@tab-highlight-color, 8%);
+@current-tab-color:             @black;
+@current-tab-highlight-color:   @disabled-button-border-color;
+@current-tab-text-color:        @text-color;
+@tab-border-size:               3px;
+@tab-border-radius:             4px;
 
 .controls
 {
@@ -153,6 +156,23 @@
                 background-color: @current-tab-color;
 
                 border-color: @current-tab-highlight-color;
+            }
+
+            &:hover
+            {
+                border-color: lighten(@tab-highlight-color, 8%);
+            }
+
+            &:active
+            {
+                background-color: darken(@tab-color, 5%);
+            }
+
+            &[data-disabled="disabled"]
+            {
+                color: @disabled-tab-text-color;
+                background-color: @disabled-tab-color;
+                border-color: @disabled-tab-highlight-color;
             }
         }
     }
@@ -213,7 +233,7 @@
 
 div#geometry
 {
-    span.left-label
+    span.align
     {
         display: inline-block;
         text-align: left;
@@ -221,11 +241,10 @@ div#geometry
     }
 }
 
-// form#light-type
-// {
-//     input[type='radio'] + label
-//     {
-//         display: block;
-//         width: 70px;
-//     }
-// }
+div#lighting
+{
+    input[type="checkbox"] + label
+    {
+        width: 60px;
+    }
+}

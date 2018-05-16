@@ -1,69 +1,21 @@
 #pragma once
 
+#define ORIGIN (new Vector(0, 0, 0))
+
+#define TRUE_WHITE (new RGBColor(1, 1, 1))
+#define TRUE_BLACK (new RGBColor(0, 0, 0))
+#define TRUE_RED   (new RGBColor(1, 0, 0))
+#define TRUE_GREEN (new RGBColor(0, 1, 0))
+#define TRUE_BLUE  (new RGBColor(0, 0, 1))
+
 #define LOAD_CSS_COLOR(GLOBAL_NAME, CSS_NAME)                      \
     GLOBAL_NAME = RGBColor.fromHex($('#g-colors').css(CSS_NAME));
 
-#define INIT_ROTATE_SLIDER(GLOBAL_NAME, RANGE_ID, RENDER)    \
-    init_range({                                             \
-        id:     RANGE_ID,                                    \
-        value:  0,                                           \
-        min:    -180,                                        \
-        max:    180,                                         \
-        step:   10,                                          \
-                                                             \
-        parse: function(value) {                             \
-            GLOBAL_NAME = parseInt(value);                   \
-            value       = Math.abs(GLOBAL_NAME).toString();  \
-            switch (value.length) {                          \
-            case 1:                                          \
-                value = '00' + value;                        \
-                break;                                       \
-            case 2:                                          \
-                value =  '0' + value;                        \
-                break;                                       \
-            }                                                \
-            if (GLOBAL_NAME >= 0)                            \
-                value =  '+' + value;                        \
-            else                                             \
-                value =  '-' + value;                        \
-            return value;                                    \
-        },                                                   \
-                                                             \
-        update: function() {                                 \
-            RENDER;                                          \
-        }                                                    \
-    });
+#define GETTER_SETTER(NAME)                                 \
+    ((value) => value !== undefined ? NAME = value : NAME)
 
-#define INIT_TRANSLATE_SLIDER(GLOBAL_NAME, RANGE_ID, RENDER)  \
-    init_range({                                              \
-        id:     RANGE_ID,                                     \
-        value:  0,                                            \
-        min:    -250,                                         \
-        max:    250,                                          \
-        step:   5,                                            \
-                                                              \
-        parse: function(value) {                              \
-            GLOBAL_NAME = parseInt(value);                    \
-            value       = Math.abs(GLOBAL_NAME).toString();   \
-            switch (value.length) {                           \
-            case 1:                                           \
-                value = '00' + value;                         \
-                break;                                        \
-            case 2:                                           \
-                value =  '0' + value;                         \
-                break;                                        \
-            }                                                 \
-            if (GLOBAL_NAME >= 0)                             \
-                value =  '+' + value;                         \
-            else                                              \
-                value =  '-' + value;                         \
-            return value;                                     \
-        },                                                    \
-                                                              \
-        update: function() {                                  \
-            RENDER;                                           \
-        }                                                     \
-    });
+#define UPDATE_GL       \
+    (() => update(gl))
 
 #define INIT_SHADERS(GL, VERTEX_SHADER, FRAGMENT_SHADER)      \
     if (! initShaders(GL, VERTEX_SHADER, FRAGMENT_SHADER)) {  \
@@ -84,6 +36,7 @@
         console.log('Failed to get the storage location of ' + SHADER_NAME);  \
         return;                                                               \
     }
+
 
 function init_range(args) {
     let parse  = args.parse;
@@ -106,6 +59,15 @@ function init_range(args) {
     range.trigger('change');
 }
 
+function init_color_picker(var_fn, picker_id, render_fn) {
+    let elem = $('#' + picker_id);
+    elem.attr('value', var_fn().toHex());
+    elem.on('input', function(e) {
+        var_fn(RGBColor.fromHex(e.target.value));
+        render_fn();
+    });
+}
+
 
 function clear(gl, color) {
     color = color ? color.copy() : BLACK.copy();
@@ -124,8 +86,10 @@ function flat_and_gouraud_shaders() {
         uniform mat4 u_View;
         uniform mat4 u_Projection;
 
-        uniform vec3 u_LightDirection;
-        uniform vec3 u_LightColor;
+        uniform vec3 u_AmbiantLightColor;
+
+        uniform vec3 u_DirectLight;
+        uniform vec3 u_DirectLightColor;
 
         uniform vec3 u_PointLight;
         uniform vec3 u_PointLightColor;
@@ -136,17 +100,18 @@ function flat_and_gouraud_shaders() {
         {
             gl_Position = u_Projection * u_View * u_Model * a_Position;
             vec4 normal = u_Model * a_Normal;
-            v_Color     = a_Color;
+            vec3 color  = a_Color.rgb;
 
-            float directIntensity = max(dot(u_LightDirection, normal.xyz), 0.0);
+            float directIntensity = max(dot(u_DirectLight, normal.xyz), 0.0);
 
-            vec4 pointLight      = u_Model * vec4(u_PointLight, 1.0);
-            vec3 pointDirection  = normalize(a_Position.xyz - pointLight.xyz);
+            vec3 pointDirection  = normalize(a_Position.xyz - u_PointLight);
             float pointIntensity = max(dot(pointDirection, normal.xyz), 0.0);
 
-            vec3 light  = directIntensity * u_LightColor;
+            vec3 light  = u_AmbiantLightColor;
             light      += pointIntensity * u_PointLightColor;
-            v_Color    += vec4(light, 1.0);
+            light      += directIntensity * u_DirectLightColor;
+            color      *= light;
+            v_Color     = vec4(color, a_Color.a);
         }`;
 
     let frag = `#version 100
@@ -163,99 +128,99 @@ function flat_and_gouraud_shaders() {
     return {vert: vert, frag: frag};
 }
 
-function render_scene(gl, shaders_fn, normalize_fn,
-                      model, view, projection, obj, lights)
-{
-    let color   = obj.color ? obj.color.copy() : WHITE.copy();
-    let shaders = shaders_fn();
-    let vert    = shaders.vert;
-    let frag    = shaders.frag;
+let render_flat = render_obj(flat_and_gouraud_shaders, normalize_obj_flat);
 
-    INIT_SHADERS(gl, vert, frag)
-    GET_ATTRIBUTE(a_Position, gl, 'a_Position')
-    GET_ATTRIBUTE(a_Normal,   gl, 'a_Normal')
-    GET_ATTRIBUTE(a_Color,    gl, 'a_Color')
+let render_gouraud = render_obj(flat_and_gouraud_shaders, normalize_obj_interpolated);
 
-    GET_UNIFORM(u_Model,           gl, 'u_Model')
-    GET_UNIFORM(u_View,            gl, 'u_View')
-    GET_UNIFORM(u_Projection,      gl, 'u_Projection')
+function render_obj(shaders_fn, normalize_fn) {
+    return function(gl, obj, lights) {
+        let color   = obj.color ? obj.color.copy() : WHITE.copy();
+        let shaders = shaders_fn();
+        let vert    = shaders.vert;
+        let frag    = shaders.frag;
 
-    GET_UNIFORM(u_LightDirection,  gl, 'u_LightDirection')
-    GET_UNIFORM(u_LightColor,      gl, 'u_LightColor')
+        INIT_SHADERS(gl, vert, frag)
 
-    GET_UNIFORM(u_PointLight,      gl, 'u_PointLight')
-    GET_UNIFORM(u_PointLightColor, gl, 'u_PointLightColor')
+        GET_ATTRIBUTE(a_Position,        gl, 'a_Position')
+        GET_ATTRIBUTE(a_Normal,          gl, 'a_Normal')
+        GET_ATTRIBUTE(a_Color,           gl, 'a_Color')
 
-    let direct_light;
-    if (lights.direct !== undefined)
-        direct_light = lights.direct;
-    else
-        direct_light = new DirectLight(new Vector(0, 0, 0), new RGBColor(0, 0, 0));
+        GET_UNIFORM(u_Model,             gl, 'u_Model')
+        GET_UNIFORM(u_View,              gl, 'u_View')
+        GET_UNIFORM(u_Projection,        gl, 'u_Projection')
 
-    let dl_dir       = direct_light.getDirection();
-    let dl_col       = direct_light.getColor();
+        GET_UNIFORM(u_AmbiantLightColor, gl, 'u_AmbiantLightColor')
 
-    let point_light;
-    if (lights.point !== undefined)
-        point_light  = lights.point;
-    else
-        point_light  = new PointLight(new Vector(0, 0, 0), new RGBColor(0, 0, 0));
+        GET_UNIFORM(u_DirectLight,       gl, 'u_DirectLight')
+        GET_UNIFORM(u_DirectLightColor,  gl, 'u_DirectLightColor')
 
-    let pl_pos       = point_light.getPosition();
-    let pl_col       = point_light.getColor();
+        GET_UNIFORM(u_PointLight,        gl, 'u_PointLight')
+        GET_UNIFORM(u_PointLightColor,   gl, 'u_PointLightColor')
 
-    color = color.scale(lights.ambiant);
-    
-    gl.uniformMatrix4fv(u_Model, false, model.transpose().data);
-    gl.uniformMatrix4fv(u_View, false, view.transpose().data);
-    gl.uniformMatrix4fv(u_Projection, false, projection.transpose().data);
+        let ambiant_light = lights.ambiant !== null ? lights.ambiant : new AmbiantLight();
+        let al_col        = ambiant_light.getColor();
 
-    gl.uniform3f(u_LightDirection, dl_dir.x, dl_dir.y, dl_dir.z);
-    gl.uniform3f(u_LightColor, dl_col.r, dl_col.g, dl_col.b);
+        let direct_light  = lights.direct !== null ? lights.direct : new DirectLight();
+        let dl_dir        = direct_light.getDirection();
+        let dl_col        = direct_light.getColor();
 
-    gl.uniform3f(u_PointLight, pl_pos.x, pl_pos.y, pl_pos.z);
-    gl.uniform3f(u_PointLightColor, pl_col.r, pl_col.g, pl_col.b);
+        let point_light   = lights.point !== null ? lights.point : new PointLight();
+        let pl_pos        = point_light.getPosition();
+        let pl_col        = point_light.getColor();
 
-    let count = obj.indices.length;
-    obj       = normalize_fn(obj);
+        gl.uniformMatrix4fv(u_Model, false, obj.model.flatten());
+        gl.uniformMatrix4fv(u_View, false, obj.view.flatten());
+        gl.uniformMatrix4fv(u_Projection, false, obj.projection.flatten());
 
-    let vertices = Vector.flatten(obj.vertices);
-    let normals  = Vector.flatten(obj.normals);
+        gl.uniform3f(u_AmbiantLightColor, al_col.r, al_col.g, al_col.b);
 
-    let buffer = {
-        vertices: gl.createBuffer(),
-        normals:  gl.createBuffer(),
-        colors:   gl.createBuffer()
-    };
-    if (! buffer.vertices || ! buffer.normals || ! buffer.colors) {
-        console.log('Failed to create the buffer objects');
-        return;
+        gl.uniform3f(u_DirectLight, dl_dir.x, dl_dir.y, dl_dir.z);
+        gl.uniform3f(u_DirectLightColor, dl_col.r, dl_col.g, dl_col.b);
+
+        gl.uniform3f(u_PointLight, pl_pos.x, pl_pos.y, pl_pos.z);
+        gl.uniform3f(u_PointLightColor, pl_col.r, pl_col.g, pl_col.b);
+
+        let count = obj.indices.length;
+        obj       = normalize_fn(obj);
+
+        let vertices = Vector.flatten(obj.vertices);
+        let normals  = Vector.flatten(obj.normals);
+
+        let buffer = {
+            vertices: gl.createBuffer(),
+            normals:  gl.createBuffer(),
+            colors:   gl.createBuffer()
+        };
+        if (! buffer.vertices || ! buffer.normals || ! buffer.colors) {
+            console.log('Failed to create the buffer objects');
+            return;
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer.vertices);
+        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
+        gl.vertexAttribPointer(a_Position, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(a_Position);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer.normals);
+        gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STREAM_DRAW);
+        gl.vertexAttribPointer(a_Normal, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(a_Normal);
+
+        let colors = [];
+        for (let i = 0; i < count; i++)
+            colors.push(color.copy());
+        colors = RGBColor.flatten(colors);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer.colors);
+        gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STREAM_DRAW);
+        gl.vertexAttribPointer(a_Color, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(a_Color);
+
+        gl.drawArrays(gl.TRIANGLES, 0, count);
+
+        gl.deleteBuffer(buffer.normals);
+        gl.deleteBuffer(buffer.vertices);
     }
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.vertices);
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
-    gl.vertexAttribPointer(a_Position, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_Position);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.normals);
-    gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STREAM_DRAW);
-    gl.vertexAttribPointer(a_Normal, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_Normal);
-
-    let colors = [];
-    for (let i = 0; i < count; i++)
-        colors.push(color.copy());
-    colors = RGBColor.flatten(colors);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.colors);
-    gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STREAM_DRAW);
-    gl.vertexAttribPointer(a_Color, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_Color);
-
-    gl.drawArrays(gl.TRIANGLES, 0, count);
-
-    gl.deleteBuffer(buffer.normals);
-    gl.deleteBuffer(buffer.vertices);
 }
 
 function normalize_obj_interpolated(obj) {
@@ -349,57 +314,6 @@ function normalize_obj_flat(obj) {
         normals.push(normal);
     }
     return {vertices: vertices, normals: normals};
-}
-
-function render_obj(gl, mode, obj, xform, color) {
-    color = color ? color.copy() : WHITE.copy();
-
-    let VSHADER = `
-        attribute vec4 a_Position;
-        uniform mat4 u_Transform;
-        void main() {
-            gl_Position = u_Transform * a_Position;
-        }
-    `;
-    let FSHADER = `
-        precision mediump float;
-        uniform vec4 u_FragColor;
-        void main() {
-            gl_FragColor = u_FragColor;
-        }    
-    `;
-    INIT_SHADERS(gl, VSHADER, FSHADER)
-    GET_ATTRIBUTE(a_Position, gl, 'a_Position')
-
-    GET_UNIFORM(u_Transform, gl, 'u_Transform')
-    GET_UNIFORM(u_FragColor, gl, 'u_FragColor')
-
-    gl.uniformMatrix4fv(u_Transform, false, xform.transpose().data);
-    gl.uniform4f(u_FragColor, color.r, color.g, color.b, color.a);
-
-    let buffers = {
-        vertices: gl.createBuffer(),
-        indices:  gl.createBuffer()
-    };
-    if (! buffers.vertices || ! buffers.indices) {
-        console.log('Failed to create the buffer objects');
-        return;
-    }
-
-    let vertices = Vector.flatten(obj.vertices);
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertices);
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
-    gl.vertexAttribPointer(a_Position, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_Position);
-
-    let indices = new Uint16Array(obj.indices);
-    let count   = obj.indices.length;
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STREAM_DRAW);
-    gl.drawElements(mode, count, gl.UNSIGNED_SHORT, 0);
-
-    gl.deleteBuffer(buffers.indices);
-    gl.deleteBuffer(buffers.vertices);
 }
 
 function render_grid(gl, color) {

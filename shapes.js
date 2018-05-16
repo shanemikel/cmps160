@@ -3,8 +3,6 @@
 #include "util.js"
 
 
-#define ORIGIN (new Vector(0, 0, 0))
-
 let Polyline = function(color) {
     this.color  = color ? color.copy() : WHITE.copy();
     this.points = [];
@@ -588,6 +586,10 @@ Matrix.prototype = {
         }
         return mat;
     },
+
+    flatten: function() {
+        return this.transpose().data;
+    },
 };
 
 Matrix.lookAt = function(args) {
@@ -702,7 +704,7 @@ let RGBColor = function(r, g, b, a) {
     this.r = r;
     this.g = g;
     this.b = b;
-    this.a = a || 1;
+    this.a = a !== undefined ? a : 1;
 };
 
 RGBColor.prototype = {
@@ -717,6 +719,12 @@ RGBColor.prototype = {
 
     toList: function() {
         return [this.r, this.g, this.b, this.a];
+    },
+    toHex: function() {
+        let hexValue = function(number) {
+            return Math.floor(number * 255).toString(16);
+        };
+        return '#' + hexValue(this.r) + hexValue(this.g) + hexValue(this.b);
     },
 
     copy: function() {
@@ -760,18 +768,45 @@ RGBColor.flatten = function(arr) {
 };
 
 
+let AmbiantLight = function(color) {
+    this.color = color !== undefined ? color.copy() : TRUE_BLACK;
+};
+
+AmbiantLight.prototype = {
+    getColor: function() {
+        return this.color.copy();
+    },
+    setColor: function(color) {
+        this.color = color.copy();
+    },
+
+    copy: function() {
+        return new AmbiantLight(this.color.copy());
+    },
+};
+
 let DirectLight = function(direction, color) {
-    this.direction = direction.unit();
-    direction.w    = 0;
-    this.color     = color.copy();
+    this.direction   = direction !== undefined ? direction.unit() : ORIGIN;
+    this.direction.w = 0;
+    this.color       = color !== undefined ? color.copy() : TRUE_BLACK;
 };
 
 DirectLight.prototype = {
-    getDirection: function() {
-        return this.direction.negate();
+    getDirection: function(model) {
+        if (model !== undefined)
+            return model.multiply(this.direction);
+        return this.direction;
     },
+    setDirection: function(direction) {
+        this.direction   = direction.unit();
+        this.direction.w = 0;
+    },
+
     getColor: function() {
         return this.color.copy();
+    },
+    setColor: function(color) {
+        this.color = color.copy();
     },
 
     copy: function() {
@@ -780,16 +815,25 @@ DirectLight.prototype = {
 };
 
 let PointLight = function(position, color) {
-    this.position = position.copy();
-    this.color    = color.copy();
+    this.position = position !== undefined ? position.copy() : ORIGIN;
+    this.color    = color !== undefined ? color.copy() : TRUE_BLACK;
 };
 
 PointLight.prototype = {
-    getPosition: function() {
+    getPosition: function(model) {
+        if (model !== undefined)
+            return model.multiply(this.position);
         return this.position.copy();
     },
+    setPosition: function(position) {
+        this.position = position.copy();
+    },
+    
     getColor: function() {
         return this.color.copy();
+    },
+    setColor: function(color) {
+        this.color = color.copy();
     },
 
     copy: function() {
