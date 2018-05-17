@@ -147,8 +147,8 @@ Sphere.prototype = {
         };
         let polygons = this.toPolygons(polygon_count, polygon_side_count);
 
-        let start       = 1;
-        let top         = 0;
+        let start  = 1;
+        let top    = 0;
         for (let i = 0; i < polygon_side_count; i++) {
             let i2 = (i + 1) % polygon_side_count;
 
@@ -156,8 +156,8 @@ Sphere.prototype = {
             let j2 = i2 + start;
 
             obj.indices.push(top);
-            obj.indices.push(j);
             obj.indices.push(j2);
+            obj.indices.push(j);
         }
         let top_vertex  = new Vector(0, 0, this.radius);
         let top_polygon = polygons[0];
@@ -178,13 +178,13 @@ Sphere.prototype = {
                 let l  = j  + start_next;
                 let l2 = j2 + start_next;
 
-                obj.indices.push(k);
                 obj.indices.push(l);
+                obj.indices.push(k);
                 obj.indices.push(k2);
 
-                obj.indices.push(l2);
-                obj.indices.push(k2);
                 obj.indices.push(l);
+                obj.indices.push(k2);
+                obj.indices.push(l2);
             }
 
             if (i > 0) {
@@ -202,8 +202,8 @@ Sphere.prototype = {
             let j2 = i2 + start;
 
             obj.indices.push(bottom);
-            obj.indices.push(j2);
             obj.indices.push(j);
+            obj.indices.push(j2);
         }
         let bottom_vertex  = new Vector(0, 0, -this.radius);
         let bottom_polygon = polygons[polygons.length - 1];
@@ -264,7 +264,7 @@ Cylinder.prototype = {
             let i2 = i + 1;
             if (i2 == sides + 1)
                 i2 = 1;
-            if (sides % 2 == 0) {
+            if (sides % 2 == 1) {
                 indices.push({end: 1, index: i});
                 indices.push({end: 2, index: i});
                 indices.push({end: 1, index: i2});
@@ -355,8 +355,6 @@ Cylinder.prototype = {
 };
 
 
-// TODO explicit conversion between vec3 and vec4
-
 let Vector = function(x, y, z, w) {
     this.x = x;
     this.y = y;
@@ -443,8 +441,6 @@ Vector.flatten = function(arr) {
     return res;
 };
 
-
-// TODO type-checking of vec3 and vec4
 
 let Matrix = function() {
     /**  Construct a 4x4 identity matrix stored as a row-major Float32Array
@@ -769,7 +765,7 @@ RGBColor.flatten = function(arr) {
 
 
 let AmbiantLight = function(color) {
-    this.color = color !== undefined ? color.copy() : TRUE_BLACK;
+    this.color = color.copy();
 };
 
 AmbiantLight.prototype = {
@@ -785,17 +781,19 @@ AmbiantLight.prototype = {
     },
 };
 
+AmbiantLight.neutral = function() {
+    return new AmbiantLight(TRUE_BLACK);
+};
+
 let DirectLight = function(direction, color) {
-    this.direction   = direction !== undefined ? direction.unit() : ORIGIN;
+    this.direction   = direction.unit();
     this.direction.w = 0;
-    this.color       = color !== undefined ? color.copy() : TRUE_BLACK;
+    this.color       = color.copy();
 };
 
 DirectLight.prototype = {
-    getDirection: function(model) {
-        if (model !== undefined)
-            return model.multiply(this.direction);
-        return this.direction;
+    getDirection: function() {
+        return this.direction.negate();
     },
     setDirection: function(direction) {
         this.direction   = direction.unit();
@@ -814,15 +812,17 @@ DirectLight.prototype = {
     },
 };
 
+DirectLight.neutral = function() {
+    return new DirectLight(ORIGIN, TRUE_BLACK);
+};
+
 let PointLight = function(position, color) {
-    this.position = position !== undefined ? position.copy() : ORIGIN;
-    this.color    = color !== undefined ? color.copy() : TRUE_BLACK;
+    this.position = position.copy();
+    this.color    = color.copy();
 };
 
 PointLight.prototype = {
-    getPosition: function(model) {
-        if (model !== undefined)
-            return model.multiply(this.position);
+    getPosition: function() {
         return this.position.copy();
     },
     setPosition: function(position) {
@@ -839,4 +839,26 @@ PointLight.prototype = {
     copy: function() {
         return new PointLight(this.position.copy(), this.color.copy());
     },
+};
+
+PointLight.neutral = function() {
+    return new PointLight(ORIGIN, TRUE_BLACK);
+};
+
+let SpecularLight = function(power) {
+    this.power = power;
+};
+
+SpecularLight.prototype = {
+    getPower: function() {
+        return this.power;
+    },
+
+    copy: function() {
+        return new SpecularLight(this.power);
+    },
+};
+
+SpecularLight.neutral = function() {
+    return new SpecularLight(-1);
 };

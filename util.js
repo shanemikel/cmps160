@@ -94,24 +94,36 @@ function flat_and_gouraud_shaders() {
         uniform vec3 u_PointLight;
         uniform vec3 u_PointLightColor;
 
+        uniform float u_SpecularPower;
+
         varying vec4 v_Color;
 
         void main(void)
         {
-            gl_Position = u_Projection * u_View * u_Model * a_Position;
+            gl_Position = u_View * u_Model * a_Position;
             vec4 normal = u_Model * a_Normal;
             vec3 color  = a_Color.rgb;
 
             float directIntensity = max(dot(u_DirectLight, normal.xyz), 0.0);
 
-            vec3 pointDirection  = normalize(a_Position.xyz - u_PointLight);
+            vec3 pointDirection  = normalize(u_PointLight - a_Position.xyz);
             float pointIntensity = max(dot(pointDirection, normal.xyz), 0.0);
 
+            vec3 viewDir            = normalize(gl_Position.xyz);
+            vec3 reflectDir         = reflect(pointDirection, normal.xyz);
+            float specularIntensity = max(dot(viewDir, reflectDir), 0.0);
+
             vec3 light  = u_AmbiantLightColor;
-            light      += pointIntensity * u_PointLightColor;
             light      += directIntensity * u_DirectLightColor;
+            light      += pointIntensity * u_PointLightColor;
+
+            if (u_SpecularPower >= 0.0)
+                light  += pow(specularIntensity, u_SpecularPower) * u_PointLightColor;
+
             color      *= light;
             v_Color     = vec4(color, a_Color.a);
+
+            gl_Position = u_Projection * gl_Position;
         }`;
 
     let frag = `#version 100
@@ -157,16 +169,37 @@ function render_obj(shaders_fn, normalize_fn) {
         GET_UNIFORM(u_PointLight,        gl, 'u_PointLight')
         GET_UNIFORM(u_PointLightColor,   gl, 'u_PointLightColor')
 
-        let ambiant_light = lights.ambiant !== null ? lights.ambiant : new AmbiantLight();
-        let al_col        = ambiant_light.getColor();
+        GET_UNIFORM(u_SpecularPower,     gl, 'u_SpecularPower')
 
-        let direct_light  = lights.direct !== null ? lights.direct : new DirectLight();
-        let dl_dir        = direct_light.getDirection();
-        let dl_col        = direct_light.getColor();
+        let ambiant_light;
+        if (lights.ambiant !== null)
+            ambiant_light  = lights.ambiant;
+        else
+            ambiant_light  = AmbiantLight.neutral();
+        let al_col         = ambiant_light.getColor();
 
-        let point_light   = lights.point !== null ? lights.point : new PointLight();
-        let pl_pos        = point_light.getPosition();
-        let pl_col        = point_light.getColor();
+        let direct_light;
+        if (lights.direct !== null)
+            direct_light   = lights.direct;
+        else
+            direct_light   = DirectLight.neutral();
+        let dl_dir         = direct_light.getDirection();
+        let dl_col         = direct_light.getColor();
+
+        let point_light;
+        if (lights.point !== null)
+            point_light    = lights.point;
+        else
+            point_light    = PointLight.neutral();
+        let pl_pos         = point_light.getPosition();
+        let pl_col         = point_light.getColor();
+
+        let specular_light;
+        if (lights.specular !== null)
+            specular_light = lights.specular;
+        else
+            specular_light = SpecularLight.neutral();
+        let sl_pow         = specular_light.getPower();
 
         gl.uniformMatrix4fv(u_Model, false, obj.model.flatten());
         gl.uniformMatrix4fv(u_View, false, obj.view.flatten());
@@ -179,6 +212,8 @@ function render_obj(shaders_fn, normalize_fn) {
 
         gl.uniform3f(u_PointLight, pl_pos.x, pl_pos.y, pl_pos.z);
         gl.uniform3f(u_PointLightColor, pl_col.r, pl_col.g, pl_col.b);
+
+        gl.uniform1f(u_SpecularPower, sl_pow);
 
         let count = obj.indices.length;
         obj       = normalize_fn(obj);

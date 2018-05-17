@@ -2,53 +2,57 @@
 #include "collections.js"
 #include "util.js"
 
-let WHITE         = null;
-let BLACK         = null;
-let RED           = null;
-let GREEN         = null;
-let BLUE          = null;
-let GREY          = null;
-let DARK_GREY     = null;
-let LIGHT_GREY    = null;
+let WHITE          = null;
+let BLACK          = null;
+let RED            = null;
+let GREEN          = null;
+let BLUE           = null;
+let GREY           = null;
+let DARK_GREY      = null;
+let LIGHT_GREY     = null;
 
-let CANVAS        = null;
-let WIDTH         = null;
-let HEIGHT        = null;
-let COLOR         = null;
+let CANVAS         = null;
+let WIDTH          = null;
+let HEIGHT         = null;
+let COLOR          = null;
 
-let ROTATE_X      = 0;
-let ROTATE_Y      = 0;
-let ROTATE_Z      = 0;
+let ROTATE_X       = 0;
+let ROTATE_Y       = 0;
+let ROTATE_Z       = 0;
 
-let TRANSLATE_X   = 0;
-let TRANSLATE_Y   = 0;
-let TRANSLATE_Z   = 0;
+let TRANSLATE_X    = 0;
+let TRANSLATE_Y    = 0;
+let TRANSLATE_Z    = 0;
 
-let CAMERA_EYE    = new Vector(0, 0, 350);
-let CAMERA_CENTER = ORIGIN;
-let CAMERA_UP     = new Vector(0, 1,   0);
+let CAMERA_EYE     = new Vector(0, 0, 350);
+let CAMERA_CENTER  = ORIGIN;
+let CAMERA_UP      = new Vector(0, 1,   0);
 
-let AMBIANT_COLOR = TRUE_WHITE.scale(0.15);
+let AMBIANT_COLOR  = TRUE_WHITE.scale(0.15);
 
-let DIRECT_X      = 0;
-let DIRECT_Y      = -100;
-let DIRECT_Z      = -100;
-let DIRECT_COLOR  = TRUE_WHITE.scale(0.8);
+let DIRECT_X       = 0;
+let DIRECT_Y       = -100;
+let DIRECT_Z       = -100;
+let DIRECT_COLOR   = TRUE_WHITE.scale(0.8);
 
-let POINT_X       = 250;
-let POINT_Y       = 150;
-let POINT_Z       = 250;
-let POINT_COLOR   = TRUE_WHITE.scale(0.8);
+let POINT_X        = 250;
+let POINT_Y        = 150;
+let POINT_Z        = 250;
+let POINT_COLOR    = TRUE_WHITE.scale(0.8);
+
+let SPECULAR_POWER = 8;
 
 let light = {
-    AMBIANT: 'light-ambiant',
-    DIRECT:  'light-direct',
-    POINT:   'light-point'
+    AMBIANT:  'light-ambiant',
+    DIRECT:   'light-direct',
+    POINT:    'light-point',
+    SPECULAR: 'light-specular'
 };
 let LIGHT = {
-    ambiant: true,
-    direct:  true,
-    point:   false
+    ambiant:  true,
+    direct:   true,
+    point:    false,
+    specular: true
 };
 
 let projection = {
@@ -185,6 +189,38 @@ function start(gl) {
     $('#' + light.POINT).prop('checked', LIGHT.point);
     $('#' + light.POINT).on('change', function(e) {
         LIGHT.point = $(e.target).prop('checked');
+        update(gl);
+    });
+
+    init_range({
+        id: 'light-specular-power',
+        value: SPECULAR_POWER,
+        min: 2,
+        max: 32,
+        step: 2,
+
+        parse: function(value) {
+            SPECULAR_POWER = parseInt(value);
+            value          = SPECULAR_POWER.toString();
+            switch (value.length) {
+            case 1:
+                value = '00' + value;
+                break;
+            case 2:
+                value =  '0' + value;
+                break;
+            }
+            return value;
+        },
+
+        update: function() {
+            update(gl);
+        }
+    });
+
+    $('#' + light.SPECULAR).prop('checked', LIGHT.specular);
+    $('#' + light.SPECULAR).on('change', function(e) {
+        LIGHT.specular = $(e.target).prop('checked');
         update(gl);
     });
 
@@ -368,21 +404,26 @@ function update(gl, mouse_xy) {
     let lights = {};
 
     if (LIGHT.ambiant)
-        lights.ambiant = new AmbiantLight(AMBIANT_COLOR);
+        lights.ambiant  = new AmbiantLight(AMBIANT_COLOR);
     else
-        lights.ambiant = null;
+        lights.ambiant  = null;
 
     if (LIGHT.direct)
-        lights.direct  = new DirectLight(new Vector(DIRECT_X, DIRECT_Y, DIRECT_Z),
+        lights.direct   = new DirectLight(new Vector(DIRECT_X, DIRECT_Y, DIRECT_Z),
                                          DIRECT_COLOR);
     else
-        lights.direct  = null;
+        lights.direct   = null;
 
     if (LIGHT.point)
-        lights.point   = new PointLight(new Vector(POINT_X, POINT_Y, POINT_Z),
+        lights.point    = new PointLight(new Vector(POINT_X, POINT_Y, POINT_Z),
                                         POINT_COLOR);
     else
-        lights.point   = null;
+        lights.point    = null;
+
+    if (LIGHT.specular)
+        lights.specular = new SpecularLight(SPECULAR_POWER);
+    else
+        lights.specular = null;
 
     switch (SHADING) {
     case shading.FLAT:

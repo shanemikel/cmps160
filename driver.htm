@@ -23,7 +23,7 @@
   <div id="objects" class="tab">
     <div class="group">
       <span class="group">
-	<input type="file"></input>
+	<input type="file" />
 	<button type="button">Extract SOR</button>
 	<button type="button">Save</button>
 	<button type="button">Reset</button>
@@ -35,16 +35,16 @@
       </span>
       <span class="group">
 	Side-count
-	<input id="cylinder-side-count" type="range"></input>
+	<input id="cylinder-side-count" type="range" />
 	<label for="cylinder-side-count"></label>
       </span>
       <span class="group">
 	Radius
-	<input id="cylinder-radius" type="range"></input>
+	<input id="cylinder-radius" type="range" />
 	<label for="cylinder-radius"></label>
       </span>
       <span class="group">
-	<input id="cylinder-name" type="text"></input>
+	<input id="cylinder-name" type="text" />
       </span>
     </div>
     <div class="group">
@@ -53,16 +53,16 @@
       </span>
       <span class="group">
 	Polygon Count
-	<input id="sphere-polygon-count" type="range"></input>
+	<input id="sphere-polygon-count" type="range" />
 	<label for="sphere-polygon-count"></label>
       </span>
       <span class="group">
 	Polygon Sides
-	<input id="sphere-polygon-sides" type="range"></input>
+	<input id="sphere-polygon-sides" type="range" />
 	<label for="sphere-polygon-sides"></label>
       </span>
       <span class="group">
-	<input id="sphere-name" type="text"></input>
+	<input id="sphere-name" type="text" />
       </span>
     </div>
   </div>
@@ -72,15 +72,15 @@
 	Rotate
       </span>
       <span class="group">
-	X <input id="rotate-x" type="range"></input>
+	X <input id="rotate-x" type="range" />
 	<label for="rotate-x"></label>
       </span>
       <span class="group">
-	Y <input id="rotate-y" type="range"></input>
+	Y <input id="rotate-y" type="range" />
 	<label for="rotate-y"></label>
       </span>
       <span class="group">
-	Z <input id="rotate-z" type="range"></input>
+	Z <input id="rotate-z" type="range" />
 	<label for="rotate-z"></label>
       </span>
     </div>
@@ -89,15 +89,15 @@
 	Translate
       </span>
       <span class="group">
-	X <input id="translate-x" type="range"></input>
+	X <input id="translate-x" type="range" />
 	<label for="translate-x"></label>
       </span>
       <span class="group">
-	Y <input id="translate-y" type="range"></input>
+	Y <input id="translate-y" type="range" />
 	<label for="translate-y"></label>
       </span>
       <span class="group">
-	Z <input id="translate-z" type="range"></input>
+	Z <input id="translate-z" type="range" />
 	<label for="translate-z"></label>
       </span>
     </div>
@@ -113,53 +113,59 @@
     </div>
   </div>
   <div id="lighting" class="tab">
-    <form id="light-type">
-      <div class="group">
-	<span class="group">
-	  <input id="light-ambiant" name="light-type" type="checkbox" />
-	  <label for="light-ambiant">Ambiant</label>
-	  <input id="light-ambiant-color" type="color"></input>
-	</span>
-      </div>
-      <div class="group">
-	<span class="group">
-	  <input id="light-direct" name="light-type" type="checkbox" />
-	  <label for="light-direct">Direct</label>
-	  <input id="light-direct-color" type="color"></input>
-	</span>
-	<span class="group">
-	  X <input id="light-direct-x" type="range"></input>
-	  <label for="light-direct-x"></label>
-	</span>
-	<span class="group">
-	  Y <input id="light-direct-y" type="range"></input>
-	  <label for="light-direct-y"></label>
-	</span>
-	<span class="group">
-	  Z <input id="light-direct-z" type="range"></input>
-	  <label for="light-direct-z"></label>
-	</span>
-      </div>
-      <div class="group">
-	<span class="group">
-	  <input id="light-point" name="light-type" type="checkbox" />
-	  <label for="light-point">Point</label>
-	  <input id="light-point-color" type="color"></input>
-	</span>
-	<span class="group">
-	  X <input id="light-point-x" type="range"></input>
-	  <label for="light-point-x"></label>
-	</span>
-	<span class="group">
-	  Y <input id="light-point-y" type="range"></input>
-	  <label for="light-point-y"></label>
-	</span>
-	<span class="group">
-	  Z <input id="light-point-z" type="range"></input>
-	  <label for="light-point-z"></label>
-	</span>
-      </div>
-    </form>
+    <div class="group">
+      <span class="group">
+	<input id="light-ambiant" type="checkbox" />
+	<label for="light-ambiant">Ambiant</label>
+	<input id="light-ambiant-color" type="color" />
+      </span>
+    </div>
+    <div class="group">
+      <span class="group">
+	<input id="light-direct" type="checkbox" />
+	<label for="light-direct">Direct</label>
+	<input id="light-direct-color" type="color" />
+      </span>
+      <span class="group">
+	X <input id="light-direct-x" type="range" />
+	<label for="light-direct-x"></label>
+      </span>
+      <span class="group">
+	Y <input id="light-direct-y" type="range" />
+	<label for="light-direct-y"></label>
+      </span>
+      <span class="group">
+	Z <input id="light-direct-z" type="range" />
+	<label for="light-direct-z"></label>
+      </span>
+    </div>
+    <div class="group">
+      <span class="group">
+	<input id="light-point" type="checkbox" />
+	<label for="light-point">Point</label>
+	<input id="light-point-color" type="color" />
+      </span>
+      <span class="group">
+	X <input id="light-point-x" type="range" />
+	<label for="light-point-x"></label>
+      </span>
+      <span class="group">
+	Y <input id="light-point-y" type="range" />
+	<label for="light-point-y"></label>
+      </span>
+      <span class="group">
+	Z <input id="light-point-z" type="range" />
+	<label for="light-point-z"></label>
+      </span>
+    </div>
+    <div class="group">
+      <span class="group">
+	<input id="light-specular" type="checkbox" />
+	<label for="light-specular">Specular</label>
+	<input id="light-specular-power" type="range" />
+	<label for="light-specular-power"></input>
+      </span>
+    </div>
   </div>
   <div id="shading" class="tab">
     <div class="group">
