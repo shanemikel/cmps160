@@ -77,8 +77,8 @@ function clear(gl, color) {
 }
 
 let render_flat    = render_obj(flat_and_gouraud_shaders(), normalize_obj_flat);
-let render_gouraud = render_obj(flat_and_gouraud_shaders(), normalize_obj_interpolated);
-let render_phong   = render_obj(phong_shaders(), normalize_obj_interpolated);
+let render_gouraud = render_obj(flat_and_gouraud_shaders(), normalize_obj_ave);
+let render_phong   = render_obj(phong_shaders(), normalize_obj_ave);
 
 function phong_shaders() {
     let vert = `#version 100
@@ -90,10 +90,9 @@ function phong_shaders() {
         uniform mat4  u_View;
         uniform mat4  u_Projection;
 
-        uniform vec3  u_DirectLight;
-        uniform vec3  u_PointLight;
-
+        varying vec4  v_Position;
         varying vec4  v_Color;
+        varying vec4  v_Normal;
 
         varying float v_DirectIntensity;
         varying float v_PointIntensity;
@@ -101,44 +100,47 @@ function phong_shaders() {
 
         void main(void)
         {
-            gl_Position = u_View * u_Model * a_Position;
-            vec4 normal = u_Model * a_Normal;
-            v_Color     = a_Color;
+            v_Position = u_View * u_Model * a_Position;
+            v_Normal   = u_View * u_Model * a_Normal;
+            v_Color    = a_Color;
 
-            v_DirectIntensity = max(dot(u_DirectLight, normal.xyz), 0.0);
-
-            vec3 pointDirection = normalize(u_PointLight - a_Position.xyz);
-            v_PointIntensity    = max(dot(pointDirection, normal.xyz), 0.0);
-
-            vec3 viewDirection     = normalize(gl_Position.xyz);
-            vec3 reflectDirection  = reflect(pointDirection, normal.xyz);
-            v_SpecularIntensity = max(dot(viewDirection, reflectDirection), 0.0);
-
-            gl_Position = u_Projection * gl_Position;
+            gl_Position  = u_Projection * v_Position;
         }`;
 
     let frag = `#version 100
         precision mediump float;
 
         uniform vec3  u_AmbiantLightColor;
+
+        uniform vec3  u_DirectLight;
         uniform vec3  u_DirectLightColor;
+
+        uniform vec3  u_PointLight;
         uniform vec3  u_PointLightColor;
+
         uniform float u_SpecularPower;
 
+        varying vec4  v_Position;
         varying vec4  v_Color;
-
-        varying float v_DirectIntensity;
-        varying float v_PointIntensity;
-        varying float v_SpecularIntensity;
+        varying vec4  v_Normal;
 
         void main(void)
         {
+            float directIntensity = max(dot(u_DirectLight, v_Normal.xyz), 0.0);
+
+            vec3 pointDirection  = normalize(u_PointLight - v_Position.xyz);
+            float pointIntensity = max(dot(pointDirection, v_Normal.xyz), 0.0);
+
+            vec3 viewDirection      = normalize(v_Position.xyz);
+            vec3 reflectDirection   = reflect(pointDirection, v_Normal.xyz);
+            float specularIntensity = max(dot(viewDirection, reflectDirection), 0.0);
+
             vec3 light  = u_AmbiantLightColor;
-            light      += v_DirectIntensity * u_DirectLightColor;
-            light      += v_PointIntensity * u_PointLightColor;
+            light      += directIntensity * u_DirectLightColor;
+            light      += pointIntensity * u_PointLightColor;
 
             if (u_SpecularPower >= 0.0)
-                light  += pow(v_SpecularIntensity, u_SpecularPower) * u_PointLightColor;
+                light  += pow(specularIntensity, u_SpecularPower) * u_PointLightColor;
 
             gl_FragColor = vec4(v_Color.xyz * light, v_Color.a);
         }    
@@ -324,7 +326,7 @@ function render_obj(shaders, normalize_fn) {
     }
 }
 
-function normalize_obj_interpolated(obj) {
+function normalize_obj_ave(obj) {
     /**  Make a Vertices/Normals OBJ from a Indices/Vertices OBJ
      *   @param obj.indices the index array
      *   @param obj.vertices the vertex array
@@ -358,7 +360,7 @@ function normalize_obj_interpolated(obj) {
         let v1 = obj.vertices[i1];
         let v2 = obj.vertices[i2];
 
-        let normal = v2.sub(v0).cross(v1.sub(v0));
+        let normal = v2.sub(v0).cross(v1.sub(v0)).unit();
 
         face_map.insert_face_normal(i0, i1, i2, normal);
     }
@@ -369,13 +371,11 @@ function normalize_obj_interpolated(obj) {
         let v0 = obj.vertices[i0];
 
         let normal       = new Vector(0, 0, 0);
-        let faces        = 0;
         let face_normals = face_map.lookup_incident_normals(i0);
-        for (let j = 0; j < face_normals.length; j++) {
+        for (let j = 0; j < face_normals.length; j++)
             normal = normal.add(face_normals[j]);
-            faces += 1;
-        }
-        normal   = normal.scale(1 / faces).unit();
+
+        normal   = normal.unit();
         normal.w = 0;
 
         vertices.push(v0);

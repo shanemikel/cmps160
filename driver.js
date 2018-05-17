@@ -379,12 +379,13 @@ function update(gl, mouse_xy) {
         break;
     }
 
+    let sides = 49;
     let obj;
+
     switch (SHAPE) {
     case shape.CYLINDER:
         let left_end  = new Vector(-150,  0);
         let right_end = new Vector( 150,  0);
-        let sides     = 48;
         let cylinder  = new Cylinder(left_end, right_end, 50);
 
         obj = cylinder.toTriangles(sides);
@@ -392,7 +393,7 @@ function update(gl, mouse_xy) {
     case shape.SPHERE:
         let sphere = new Sphere(ORIGIN, 100);
 
-        obj = sphere.toTriangles(25, 25);
+        obj = sphere.toTriangles(sides, sides);
         break;
     }
 

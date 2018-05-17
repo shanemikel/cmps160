@@ -294,7 +294,7 @@ Cylinder.prototype = {
         let c1_start = 0;
         let c2_start = c1_obj.vertices.length;
 
-        if (sides % 2 == 0) {
+        if (sides % 2 == 1) {
             obj.indices = obj.indices.concat(c1_obj.indices);
             for (let i = 0; i < c2_obj.indices.length / 3; i++) {
                 let tmp = c2_obj.indices[3 * i + 1];
