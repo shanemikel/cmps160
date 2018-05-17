@@ -76,6 +76,77 @@ function clear(gl, color) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 }
 
+let render_flat    = render_obj(flat_and_gouraud_shaders(), normalize_obj_flat);
+let render_gouraud = render_obj(flat_and_gouraud_shaders(), normalize_obj_interpolated);
+let render_phong   = render_obj(phong_shaders(), normalize_obj_interpolated);
+
+function phong_shaders() {
+    let vert = `#version 100
+        attribute vec4 a_Position;
+        attribute vec4 a_Normal;
+        attribute vec4 a_Color;
+
+        uniform mat4  u_Model;
+        uniform mat4  u_View;
+        uniform mat4  u_Projection;
+
+        uniform vec3  u_DirectLight;
+        uniform vec3  u_PointLight;
+
+        varying vec4  v_Color;
+
+        varying float v_DirectIntensity;
+        varying float v_PointIntensity;
+        varying float v_SpecularIntensity;
+
+        void main(void)
+        {
+            gl_Position = u_View * u_Model * a_Position;
+            vec4 normal = u_Model * a_Normal;
+            v_Color     = a_Color;
+
+            v_DirectIntensity = max(dot(u_DirectLight, normal.xyz), 0.0);
+
+            vec3 pointDirection = normalize(u_PointLight - a_Position.xyz);
+            v_PointIntensity    = max(dot(pointDirection, normal.xyz), 0.0);
+
+            vec3 viewDirection     = normalize(gl_Position.xyz);
+            vec3 reflectDirection  = reflect(pointDirection, normal.xyz);
+            v_SpecularIntensity = max(dot(viewDirection, reflectDirection), 0.0);
+
+            gl_Position = u_Projection * gl_Position;
+        }`;
+
+    let frag = `#version 100
+        precision mediump float;
+
+        uniform vec3  u_AmbiantLightColor;
+        uniform vec3  u_DirectLightColor;
+        uniform vec3  u_PointLightColor;
+        uniform float u_SpecularPower;
+
+        varying vec4  v_Color;
+
+        varying float v_DirectIntensity;
+        varying float v_PointIntensity;
+        varying float v_SpecularIntensity;
+
+        void main(void)
+        {
+            vec3 light  = u_AmbiantLightColor;
+            light      += v_DirectIntensity * u_DirectLightColor;
+            light      += v_PointIntensity * u_PointLightColor;
+
+            if (u_SpecularPower >= 0.0)
+                light  += pow(v_SpecularIntensity, u_SpecularPower) * u_PointLightColor;
+
+            gl_FragColor = vec4(v_Color.xyz * light, v_Color.a);
+        }    
+    `;
+
+    return {vert: vert, frag: frag};
+}
+
 function flat_and_gouraud_shaders() {
     let vert = `#version 100
         attribute vec4 a_Position;
@@ -140,14 +211,9 @@ function flat_and_gouraud_shaders() {
     return {vert: vert, frag: frag};
 }
 
-let render_flat = render_obj(flat_and_gouraud_shaders, normalize_obj_flat);
-
-let render_gouraud = render_obj(flat_and_gouraud_shaders, normalize_obj_interpolated);
-
-function render_obj(shaders_fn, normalize_fn) {
+function render_obj(shaders, normalize_fn) {
     return function(gl, obj, lights) {
         let color   = obj.color ? obj.color.copy() : WHITE.copy();
-        let shaders = shaders_fn();
         let vert    = shaders.vert;
         let frag    = shaders.frag;
 

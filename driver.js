@@ -384,7 +384,7 @@ function update(gl, mouse_xy) {
     case shape.CYLINDER:
         let left_end  = new Vector(-150,  0);
         let right_end = new Vector( 150,  0);
-        let sides     = 12;
+        let sides     = 48;
         let cylinder  = new Cylinder(left_end, right_end, 50);
 
         obj = cylinder.toTriangles(sides);
@@ -433,7 +433,7 @@ function update(gl, mouse_xy) {
         render_gouraud(gl, obj, lights);
         break;
     case shading.PHONG:
-        console.log('Phong shading is not yet implemented');
+        render_phong(gl, obj, lights);
         break;
     }
 }
