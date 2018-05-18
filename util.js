@@ -1,6 +1,8 @@
 #pragma once
 
+
 #define ORIGIN (new Vector(0, 0, 0))
+
 
 #define TRUE_WHITE (new RGBColor(1, 1, 1))
 #define TRUE_BLACK (new RGBColor(0, 0, 0))
@@ -11,11 +13,13 @@
 #define LOAD_CSS_COLOR(GLOBAL_NAME, CSS_NAME)                      \
     GLOBAL_NAME = RGBColor.fromHex($('#g-colors').css(CSS_NAME));
 
+
 #define GETTER_SETTER(NAME)                                 \
     ((value) => value !== undefined ? NAME = value : NAME)
 
 #define UPDATE_GL       \
     (() => update(gl))
+
 
 #define INIT_SHADERS(GL, VERTEX_SHADER, FRAGMENT_SHADER)      \
     if (! initShaders(GL, VERTEX_SHADER, FRAGMENT_SHADER)) {  \
@@ -76,9 +80,83 @@ function clear(gl, color) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 }
 
+function render_normal(gl, obj) {
+    let vert = `#version 100
+        attribute vec4 a_Position;
+        attribute vec4 a_Normal;
+
+        uniform mat4 u_Model;
+        uniform mat4 u_View;
+        uniform mat4 u_Projection;
+
+        varying vec4 v_Normal;
+
+        void main(void)
+        {
+            v_Normal    = u_View * u_Model * a_Normal;
+            gl_Position = u_Projection * u_View * u_Model * a_Position;
+        }`;
+
+    let frag = `#version 100
+        precision mediump float;
+
+        varying vec4 v_Normal;
+
+        void main(void)
+        {
+            gl_FragColor = vec4(v_Normal.xyz, v_Normal.a);
+        }    
+    `;
+
+    INIT_SHADERS(gl, vert, frag)
+
+    GET_ATTRIBUTE(a_Position, gl, 'a_Position')
+    GET_ATTRIBUTE(a_Normal,   gl, 'a_Normal')
+
+    GET_UNIFORM(u_Model,      gl, 'u_Model')
+    GET_UNIFORM(u_View,       gl, 'u_View')
+    GET_UNIFORM(u_Projection, gl, 'u_Projection')
+
+    gl.uniformMatrix4fv(u_Model, false, obj.model.flatten());
+    gl.uniformMatrix4fv(u_View, false, obj.view.flatten());
+    gl.uniformMatrix4fv(u_Projection, false, obj.projection.flatten());
+
+    let count = obj.indices.length;
+    obj       = normalize_obj_average(obj);
+
+    let vertices = Vector.flatten(obj.vertices);
+    let normals  = Vector.flatten(obj.normals);
+
+    let buffer = {
+        vertices: gl.createBuffer(),
+        normals:  gl.createBuffer()
+    };
+    if (! buffer.vertices || ! buffer.normals) {
+        console.log('Failed to create the buffer objects');
+        return;
+    }
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.vertices);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(a_Position, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Position);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.normals);
+    gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(a_Normal, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Normal);
+
+    gl.drawArrays(gl.TRIANGLES, 0, count);
+
+    gl.disableVertexAttribArray(a_Normal);
+    gl.disableVertexAttribArray(a_Position);
+    gl.deleteBuffer(buffer.normals);
+    gl.deleteBuffer(buffer.vertices);
+}
+
 let render_flat    = render_obj(flat_and_gouraud_shaders(), normalize_obj_flat);
-let render_gouraud = render_obj(flat_and_gouraud_shaders(), normalize_obj_ave);
-let render_phong   = render_obj(phong_shaders(), normalize_obj_ave);
+let render_gouraud = render_obj(flat_and_gouraud_shaders(), normalize_obj_average);
+let render_phong   = render_obj(phong_shaders(), normalize_obj_average);
 
 function phong_shaders() {
     let vert = `#version 100
@@ -93,10 +171,6 @@ function phong_shaders() {
         varying vec4  v_Position;
         varying vec4  v_Color;
         varying vec4  v_Normal;
-
-        varying float v_DirectIntensity;
-        varying float v_PointIntensity;
-        varying float v_SpecularIntensity;
 
         void main(void)
         {
@@ -321,17 +395,26 @@ function render_obj(shaders, normalize_fn) {
 
         gl.drawArrays(gl.TRIANGLES, 0, count);
 
+        gl.disableVertexAttribArray(a_Color);
+        gl.disableVertexAttribArray(a_Normal);
+        gl.disableVertexAttribArray(a_Position);
+        gl.deleteBuffer(buffer.colors);
         gl.deleteBuffer(buffer.normals);
         gl.deleteBuffer(buffer.vertices);
     }
 }
 
-function normalize_obj_ave(obj) {
+function normalize_obj_average(obj, args) {
     /**  Make a Vertices/Normals OBJ from a Indices/Vertices OBJ
      *   @param obj.indices the index array
      *   @param obj.vertices the vertex array
+     *   @param obj.weighted whether to weight the normal averages by incident face area
      *   @return an OBJ with obj.vertices and obj.normals
      */
+    args = $.extend({
+        weighted: false
+    }, args);
+
     let face_map = {
         data: {},
 
@@ -350,6 +433,7 @@ function normalize_obj_ave(obj) {
             return this.data[i0];
         },
     };
+
     let count = obj.indices.length;
     for (let i = 0; i < count / 3; i++) {
         let i0 = obj.indices[3 * i + 0];
@@ -360,10 +444,13 @@ function normalize_obj_ave(obj) {
         let v1 = obj.vertices[i1];
         let v2 = obj.vertices[i2];
 
-        let normal = v2.sub(v0).cross(v1.sub(v0)).unit();
+        let normal = v2.sub(v0).cross(v1.sub(v0));
+        if (! args.weighted)
+            normal = normal.unit();
 
         face_map.insert_face_normal(i0, i1, i2, normal);
     }
+
     let vertices = [];
     let normals  = [];
     for (let i = 0; i < count; i++) {
@@ -381,6 +468,7 @@ function normalize_obj_ave(obj) {
         vertices.push(v0);
         normals.push(normal);
     }
+
     return {vertices: vertices, normals: normals};
 }
 
@@ -480,6 +568,8 @@ function render_vertices(gl, mode, vertices, color) {
     gl.enableVertexAttribArray(a_Position);
 
     gl.drawArrays(mode, 0, count);
+
+    gl.disableVertexAttribArray(a_Position);
     gl.deleteBuffer(vertexBuffer);
 }
 
@@ -552,6 +642,8 @@ function render_points(gl, point_size, vertices, color) {
     gl.enableVertexAttribArray(a_Position);
 
     gl.drawArrays(gl.POINTS, 0, count);
+
+    gl.disableVertexAttribArray(a_Position);
     gl.deleteBuffer(vertexBuffer);
 }
 

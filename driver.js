@@ -62,11 +62,12 @@ let projection = {
 let PROJECTION = projection.PERSPECTIVE;
 
 let shading = {
+    NORMAL:  'shading-normal',
     FLAT:    'shading-flat',
     GOURAUD: 'shading-gouraud',
     PHONG:   'shading-phong'
 };
-let SHADING = shading.FLAT;
+let SHADING = shading.NORMAL;
 
 let shape = {
     CYLINDER: 'shape-cylinder',
@@ -379,7 +380,7 @@ function update(gl, mouse_xy) {
         break;
     }
 
-    let sides = 49;
+    let sides = 50;
     let obj;
 
     switch (SHAPE) {
@@ -427,6 +428,9 @@ function update(gl, mouse_xy) {
         lights.specular = null;
 
     switch (SHADING) {
+    case shading.NORMAL:
+        render_normal(gl, obj);
+        break;
     case shading.FLAT:
         render_flat(gl, obj, lights);
         break;
