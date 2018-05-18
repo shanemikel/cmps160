@@ -80,79 +80,6 @@ function clear(gl, color) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 }
 
-function render_normal(gl, obj) {
-    let vert = `#version 100
-        attribute vec4 a_Position;
-        attribute vec4 a_Normal;
-
-        uniform mat4 u_Model;
-        uniform mat4 u_View;
-        uniform mat4 u_Projection;
-
-        varying vec4 v_Normal;
-
-        void main(void)
-        {
-            v_Normal    = u_View * u_Model * a_Normal;
-            gl_Position = u_Projection * u_View * u_Model * a_Position;
-        }`;
-
-    let frag = `#version 100
-        precision mediump float;
-
-        varying vec4 v_Normal;
-
-        void main(void)
-        {
-            gl_FragColor = vec4(v_Normal.xyz, v_Normal.a);
-        }    
-    `;
-
-    INIT_SHADERS(gl, vert, frag)
-
-    GET_ATTRIBUTE(a_Position, gl, 'a_Position')
-    GET_ATTRIBUTE(a_Normal,   gl, 'a_Normal')
-
-    GET_UNIFORM(u_Model,      gl, 'u_Model')
-    GET_UNIFORM(u_View,       gl, 'u_View')
-    GET_UNIFORM(u_Projection, gl, 'u_Projection')
-
-    gl.uniformMatrix4fv(u_Model, false, obj.model.flatten());
-    gl.uniformMatrix4fv(u_View, false, obj.view.flatten());
-    gl.uniformMatrix4fv(u_Projection, false, obj.projection.flatten());
-
-    let count = obj.indices.length;
-    obj       = normalize_obj_average(obj);
-
-    let vertices = Vector.flatten(obj.vertices);
-    let normals  = Vector.flatten(obj.normals);
-
-    let buffer = {
-        vertices: gl.createBuffer(),
-        normals:  gl.createBuffer()
-    };
-    if (! buffer.vertices || ! buffer.normals) {
-        console.log('Failed to create the buffer objects');
-        return;
-    }
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.vertices);
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
-    gl.vertexAttribPointer(a_Position, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_Position);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.normals);
-    gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STREAM_DRAW);
-    gl.vertexAttribPointer(a_Normal, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_Normal);
-
-    gl.drawArrays(gl.TRIANGLES, 0, count);
-
-    gl.disableVertexAttribArray(a_Normal);
-    gl.disableVertexAttribArray(a_Position);
-    gl.deleteBuffer(buffer.normals);
-    gl.deleteBuffer(buffer.vertices);
-}
 
 let render_flat    = render_obj(flat_and_gouraud_shaders(), normalize_obj_flat);
 let render_gouraud = render_obj(flat_and_gouraud_shaders(), normalize_obj_average);
@@ -505,6 +432,256 @@ function normalize_obj_flat(obj) {
     return {vertices: vertices, normals: normals};
 }
 
+
+function render_normal(gl, obj) {
+    let vert = `#version 100
+        attribute vec4 a_Position;
+        attribute vec4 a_Normal;
+
+        uniform mat4 u_Model;
+        uniform mat4 u_View;
+        uniform mat4 u_Projection;
+
+        varying vec4 v_Normal;
+
+        void main(void)
+        {
+            v_Normal    = u_View * u_Model * a_Normal;
+            gl_Position = u_Projection * u_View * u_Model * a_Position;
+        }`;
+
+    let frag = `#version 100
+        precision mediump float;
+
+        varying vec4 v_Normal;
+
+        void main(void)
+        {
+            gl_FragColor = vec4(v_Normal.xyz, 1.0);
+        }    
+    `;
+
+    INIT_SHADERS(gl, vert, frag)
+
+    GET_ATTRIBUTE(a_Position, gl, 'a_Position')
+    GET_ATTRIBUTE(a_Normal,   gl, 'a_Normal')
+
+    GET_UNIFORM(u_Model,      gl, 'u_Model')
+    GET_UNIFORM(u_View,       gl, 'u_View')
+    GET_UNIFORM(u_Projection, gl, 'u_Projection')
+
+    gl.uniformMatrix4fv(u_Model, false, obj.model.flatten());
+    gl.uniformMatrix4fv(u_View, false, obj.view.flatten());
+    gl.uniformMatrix4fv(u_Projection, false, obj.projection.flatten());
+
+    let count = obj.indices.length;
+    obj       = normalize_obj_average(obj);
+
+    let vertices = Vector.flatten(obj.vertices);
+    let normals  = Vector.flatten(obj.normals);
+
+    let buffer = {
+        vertices: gl.createBuffer(),
+        normals:  gl.createBuffer()
+    };
+    if (! buffer.vertices || ! buffer.normals) {
+        console.log('Failed to create the buffer objects');
+        return;
+    }
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.vertices);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(a_Position, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Position);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.normals);
+    gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(a_Normal, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Normal);
+
+    gl.drawArrays(gl.TRIANGLES, 0, count);
+
+    gl.disableVertexAttribArray(a_Normal);
+    gl.disableVertexAttribArray(a_Position);
+    gl.deleteBuffer(buffer.normals);
+    gl.deleteBuffer(buffer.vertices);
+}
+
+function render_depth(gl, obj, rangeStart, rangeDepth) {
+    let color = obj.color !== undefined ? obj.color : WHITE.copy();
+
+    let vert = `#version 100
+        attribute vec4 a_Position;
+
+        uniform mat4 u_Model;
+        uniform mat4 u_View;
+        uniform mat4 u_Projection;
+
+        varying float v_Depth;
+
+        void main(void)
+        {
+            vec4 position = u_View * u_Model * a_Position;
+            v_Depth       = -position.z;
+            gl_Position   = u_Projection * position;
+        }`;
+
+    let frag = `#version 100
+        precision mediump float;
+
+        uniform vec3  u_Color;
+
+        uniform float u_RangeStart;
+        uniform float u_RangeDepth;
+
+        varying float v_Depth;
+
+        void main(void)
+        {
+            float colorScale = (v_Depth - u_RangeStart) / u_RangeDepth;
+            colorScale       = 1.0 - max(0.0, min(colorScale, 1.0));
+            gl_FragColor     = vec4(colorScale * u_Color, 1.0);
+        }    
+    `;
+
+    INIT_SHADERS(gl, vert, frag)
+
+    GET_ATTRIBUTE(a_Position, gl, 'a_Position')
+
+    GET_UNIFORM(u_Model,      gl, 'u_Model')
+    GET_UNIFORM(u_View,       gl, 'u_View')
+    GET_UNIFORM(u_Projection, gl, 'u_Projection')
+
+    GET_UNIFORM(u_Color,      gl, 'u_Color')
+
+    GET_UNIFORM(u_RangeStart, gl, 'u_RangeStart')
+    GET_UNIFORM(u_RangeDepth, gl, 'u_RangeDepth')
+
+    gl.uniformMatrix4fv(u_Model, false, obj.model.flatten());
+    gl.uniformMatrix4fv(u_View, false, obj.view.flatten());
+    gl.uniformMatrix4fv(u_Projection, false, obj.projection.flatten());
+
+    gl.uniform3f(u_Color, color.r, color.g, color.b);
+
+    gl.uniform1f(u_RangeStart, rangeStart);
+    gl.uniform1f(u_RangeDepth, rangeDepth);
+
+    let indices  = new Uint16Array(obj.indices);
+    let count    = indices.length;
+    let vertices = Vector.flatten(obj.vertices);
+
+    let buffer = {
+        indices:  gl.createBuffer(),
+        vertices: gl.createBuffer()
+    };
+    if (! buffer.indices || ! buffer.vertices) {
+        console.log('Failed to create the buffer objects');
+        return;
+    }
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.indices);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STREAM_DRAW);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.vertices);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(a_Position, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Position);
+
+    gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_SHORT, 0);
+
+    gl.disableVertexAttribArray(a_Position);
+    gl.deleteBuffer(buffer.normals);
+    gl.deleteBuffer(buffer.vertices);
+}
+
+function render_edge(gl, obj) {
+    let color = obj.color !== undefined ? obj.color : WHITE.copy();
+
+    let vert = `#version 100
+        attribute vec4 a_Position;
+        attribute vec4 a_Normal;
+
+        uniform mat4 u_Model;
+        uniform mat4 u_View;
+        uniform mat4 u_Projection;
+
+        varying vec4 v_Position;
+        varying vec4 v_Normal;
+
+        void main(void)
+        {
+            v_Position  = u_View * u_Model * a_Position;
+            v_Normal    = u_View * u_Model * a_Normal;
+            gl_Position = u_Projection * v_Position;
+        }`;
+
+    let frag = `#version 100
+        precision mediump float;
+
+        uniform vec3 u_Color;
+
+        varying vec4 v_Position;
+        varying vec4 v_Normal;
+
+        void main(void)
+        {
+            float edgeFactor = dot(normalize(-v_Position.xyz), v_Normal.xyz);
+            edgeFactor       = 1.0 - max(0.0, min(edgeFactor, 1.0));
+            gl_FragColor     = vec4(edgeFactor * u_Color, 1.0);
+        }    
+    `;
+
+    INIT_SHADERS(gl, vert, frag)
+
+    GET_ATTRIBUTE(a_Position, gl, 'a_Position')
+    GET_ATTRIBUTE(a_Normal,   gl, 'a_Normal')
+
+    GET_UNIFORM(u_Model,      gl, 'u_Model')
+    GET_UNIFORM(u_View,       gl, 'u_View')
+    GET_UNIFORM(u_Projection, gl, 'u_Projection')
+
+    GET_UNIFORM(u_Color, gl, 'u_Color')
+
+    gl.uniformMatrix4fv(u_Model, false, obj.model.flatten());
+    gl.uniformMatrix4fv(u_View, false, obj.view.flatten());
+    gl.uniformMatrix4fv(u_Projection, false, obj.projection.flatten());
+
+    gl.uniform3f(u_Color, color.r, color.g, color.b);
+
+    let count = obj.indices.length;
+    obj       = normalize_obj_average(obj);
+
+    let vertices = Vector.flatten(obj.vertices);
+    let normals  = Vector.flatten(obj.normals);
+
+    let buffer = {
+        vertices: gl.createBuffer(),
+        normals:  gl.createBuffer()
+    };
+    if (! buffer.vertices || ! buffer.normals) {
+        console.log('Failed to create the buffer objects');
+        return;
+    }
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.vertices);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(a_Position, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Position);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.normals);
+    gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STREAM_DRAW);
+    gl.vertexAttribPointer(a_Normal, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Normal);
+
+    gl.drawArrays(gl.TRIANGLES, 0, count);
+
+    gl.disableVertexAttribArray(a_Normal);
+    gl.disableVertexAttribArray(a_Position);
+    gl.deleteBuffer(buffer.normals);
+    gl.deleteBuffer(buffer.vertices);
+}
+
+
 function render_grid(gl, color) {
     let vertices = [];
     vertices.push([-1,  0, 0]);
@@ -559,7 +736,7 @@ function render_vertices(gl, mode, vertices, color) {
         return;
     }
 
-    let buffer = flatten_f32(3, vertices);
+    let buffer = flattenF32(3, vertices);
     let count  = vertices.length;
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
@@ -633,7 +810,7 @@ function render_points(gl, point_size, vertices, color) {
         return;
     }
 
-    let buffer = flatten_f32(3, vertices);
+    let buffer = flattenF32(3, vertices);
     let count  = vertices.length;
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
@@ -658,7 +835,7 @@ function get_mouse_xy(canvas, ev) {
     return [x, y];
 }
 
-function flatten_f32(n, arr) {
+function flattenF32(n, arr) {
     /**  Flatten an Array of sub-Arrays
      *   @param n the dimension (length of Array) of the sub-Arrays
      *   @param arr the Array of n-length Arrays

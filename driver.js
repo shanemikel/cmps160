@@ -16,7 +16,7 @@ let WIDTH          = null;
 let HEIGHT         = null;
 let COLOR          = null;
 
-let ROTATE_X       = 0;
+let ROTATE_X       = 180;
 let ROTATE_Y       = 0;
 let ROTATE_Z       = 0;
 
@@ -37,7 +37,7 @@ let DIRECT_COLOR   = TRUE_WHITE.scale(0.8);
 
 let POINT_X        = 250;
 let POINT_Y        = 150;
-let POINT_Z        = 250;
+let POINT_Z        = -125;
 let POINT_COLOR    = TRUE_WHITE.scale(0.8);
 
 let SPECULAR_POWER = 8;
@@ -50,8 +50,8 @@ let light = {
 };
 let LIGHT = {
     ambiant:  true,
-    direct:   true,
-    point:    false,
+    direct:   false,
+    point:    true,
     specular: true
 };
 
@@ -62,18 +62,20 @@ let projection = {
 let PROJECTION = projection.PERSPECTIVE;
 
 let shading = {
-    NORMAL:  'shading-normal',
     FLAT:    'shading-flat',
     GOURAUD: 'shading-gouraud',
-    PHONG:   'shading-phong'
+    PHONG:   'shading-phong',
+    NORMAL:  'shading-normal',
+    DEPTH:   'shading-depth',
+    EDGE:    'shading-edge'
 };
-let SHADING = shading.NORMAL;
+let SHADING = shading.PHONG;
 
 let shape = {
     CYLINDER: 'shape-cylinder',
     SPHERE:   'shape-sphere'
 };
-let SHAPE = shape.CYLINDER;
+let SHAPE = shape.SPHERE;
 
 
 function init() {
@@ -428,9 +430,6 @@ function update(gl, mouse_xy) {
         lights.specular = null;
 
     switch (SHADING) {
-    case shading.NORMAL:
-        render_normal(gl, obj);
-        break;
     case shading.FLAT:
         render_flat(gl, obj, lights);
         break;
@@ -439,6 +438,15 @@ function update(gl, mouse_xy) {
         break;
     case shading.PHONG:
         render_phong(gl, obj, lights);
+        break;
+    case shading.NORMAL:
+        render_normal(gl, obj);
+        break;
+    case shading.DEPTH:
+        render_depth(gl, obj, 250, 50);
+        break;
+    case shading.EDGE:
+        render_edge(gl, obj);
         break;
     }
 }
