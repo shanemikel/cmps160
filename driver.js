@@ -16,6 +16,9 @@ let WIDTH          = null;
 let HEIGHT         = null;
 let COLOR          = null;
 
+let SELECTED       = 255;
+let FOCUSED        = 255;
+
 let ROTATE_X       = 180;
 let ROTATE_Y       = 0;
 let ROTATE_Z       = 0;
@@ -148,6 +151,33 @@ function main() {
 
 function start(gl) {
     gl.enable(gl.DEPTH_TEST);
+
+    CANVAS.mousedown(function(e) {
+        switch (e.which) {
+        case 1:
+            let mouse  = get_mouse_xy(CANVAS, e);
+            let result = new Uint8Array(4);
+
+            update(gl);  // Needed because drawing buffer isn't preserved
+            gl.readPixels(mouse.x, mouse.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, result);
+            console.log('Clicked pixel color:', result);
+
+            SELECTED = result[3];
+            update(gl);
+            break;
+        }
+    });
+
+    CANVAS.mousemove(function(e) {
+        let mouse  = get_mouse_xy(CANVAS, e);
+        let result = new Uint8Array(4);
+
+        update(gl);  // Needed because drawing buffer isn't preserved
+        gl.readPixels(mouse.x, mouse.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, result);
+
+        FOCUSED = result[3];
+        update(gl);
+    });
 
     init_angle_slider(GETTER_SETTER(ROTATE_X), 'rotate-x', UPDATE_GL);
     init_angle_slider(GETTER_SETTER(ROTATE_Y), 'rotate-y', UPDATE_GL);
@@ -341,7 +371,7 @@ function init_direc_slider(var_fn, range_id, render_fn) {
 }
 
 
-function update(gl, mouse_xy) {
+function update(gl) {
     clear(gl, COLOR);
 
     let model = new Matrix();
@@ -400,7 +430,22 @@ function update(gl, mouse_xy) {
         break;
     }
 
-    obj.color      = new RGBColor(0.2, 0.2, 1.0);
+    let color = new RGBColor(0.2, 0.2, 1.0, 254 / 255);
+
+    switch (SELECTED) {
+    case 254:
+        obj.color = color.copy();
+        break;
+    case 255:
+        obj.color = color.scale(0.75);
+        break;
+    }
+    switch (FOCUSED) {
+    case 254:
+        obj.color = obj.color.scale(1.1);
+        break;
+    }
+
     obj.model      = model;
     obj.view       = view;
     obj.projection = proj;

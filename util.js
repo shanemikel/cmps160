@@ -830,9 +830,8 @@ function get_mouse_xy(canvas, ev) {
     let y    = ev.clientY;
     let rect = ev.target.getBoundingClientRect();
 
-    x = ((x - rect.left) - canvas.width() / 2) / (canvas.width() / 2);
-    y = (canvas.height() / 2 - (y - rect.top)) / (canvas.height() / 2);
-    return [x, y];
+    if (rect.left <= x && x < rect.right && rect.top <= y && y < rect.bottom)
+        return {x: x - rect.left, y: rect.bottom - y};
 }
 
 function flattenF32(n, arr) {
