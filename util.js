@@ -20,6 +20,12 @@
 #define UPDATE_GL       \
     (() => update(gl))
 
+#define VOID           \
+    (() => undefined)
+
+#define CONST(VAL)  \
+    (() => VAL)
+
 
 #define INIT_SHADERS(GL, VERTEX_SHADER, FRAGMENT_SHADER)      \
     if (! initShaders(GL, VERTEX_SHADER, FRAGMENT_SHADER)) {  \
@@ -48,6 +54,9 @@ function init_range(args) {
     let range  = $('#' + args.id);
     let label  = $('label[for=' + args.id + ']');
 
+    range.off('change');
+    range.off('input');
+
     range.attr('min'  , args.min);
     range.attr('max'  , args.max);
     range.attr('step' , args.step);
@@ -61,6 +70,8 @@ function init_range(args) {
         range.trigger('change');
     });
     range.trigger('change');
+
+    range.prop('disabled', false);
 }
 
 function init_color_picker(var_fn, picker_id, render_fn) {
@@ -215,8 +226,7 @@ function flat_and_gouraud_shaders() {
 }
 
 function render_obj(shaders, normalize_fn) {
-    return function(gl, obj, lights) {
-        let color   = obj.color ? obj.color.copy() : WHITE.copy();
+    return function(gl, obj, color, world, view, projection, lights) {
         let vert    = shaders.vert;
         let frag    = shaders.frag;
 
@@ -252,7 +262,7 @@ function render_obj(shaders, normalize_fn) {
             direct_light   = lights.direct;
         else
             direct_light   = DirectLight.neutral();
-        let dl_dir         = direct_light.getDirection();
+        let dl_dir         = world.multiply(direct_light.getDirection());
         let dl_col         = direct_light.getColor();
 
         let point_light;
@@ -260,7 +270,7 @@ function render_obj(shaders, normalize_fn) {
             point_light    = lights.point;
         else
             point_light    = PointLight.neutral();
-        let pl_pos         = point_light.getPosition();
+        let pl_pos         = world.multiply(point_light.getPosition());
         let pl_col         = point_light.getColor();
 
         let specular_light;
@@ -270,9 +280,9 @@ function render_obj(shaders, normalize_fn) {
             specular_light = SpecularLight.neutral();
         let sl_pow         = specular_light.getPower();
 
-        gl.uniformMatrix4fv(u_Model, false, obj.model.flatten());
-        gl.uniformMatrix4fv(u_View, false, obj.view.flatten());
-        gl.uniformMatrix4fv(u_Projection, false, obj.projection.flatten());
+        gl.uniformMatrix4fv(u_Model, false, world.multiply(obj.getXForm()).flatten());
+        gl.uniformMatrix4fv(u_View, false, view.flatten());
+        gl.uniformMatrix4fv(u_Projection, false, projection.flatten());
 
         gl.uniform3f(u_AmbiantLightColor, al_col.r, al_col.g, al_col.b);
 
@@ -433,7 +443,7 @@ function normalize_obj_flat(obj) {
 }
 
 
-function render_normal(gl, obj) {
+function render_normal(gl, obj, world, view, projection) {
     let vert = `#version 100
         attribute vec4 a_Position;
         attribute vec4 a_Normal;
@@ -470,9 +480,9 @@ function render_normal(gl, obj) {
     GET_UNIFORM(u_View,       gl, 'u_View')
     GET_UNIFORM(u_Projection, gl, 'u_Projection')
 
-    gl.uniformMatrix4fv(u_Model, false, obj.model.flatten());
-    gl.uniformMatrix4fv(u_View, false, obj.view.flatten());
-    gl.uniformMatrix4fv(u_Projection, false, obj.projection.flatten());
+    gl.uniformMatrix4fv(u_Model, false, world.multiply(obj.getXForm()).flatten());
+    gl.uniformMatrix4fv(u_View, false, view.flatten());
+    gl.uniformMatrix4fv(u_Projection, false, projection.flatten());
 
     let count = obj.indices.length;
     obj       = normalize_obj_average(obj);
@@ -507,9 +517,7 @@ function render_normal(gl, obj) {
     gl.deleteBuffer(buffer.vertices);
 }
 
-function render_depth(gl, obj, rangeStart, rangeDepth) {
-    let color = obj.color !== undefined ? obj.color : WHITE.copy();
-
+function render_depth(gl, obj, color, world, view, projection, rangeStart, rangeDepth) {
     let vert = `#version 100
         attribute vec4 a_Position;
 
@@ -557,9 +565,9 @@ function render_depth(gl, obj, rangeStart, rangeDepth) {
     GET_UNIFORM(u_RangeStart, gl, 'u_RangeStart')
     GET_UNIFORM(u_RangeDepth, gl, 'u_RangeDepth')
 
-    gl.uniformMatrix4fv(u_Model, false, obj.model.flatten());
-    gl.uniformMatrix4fv(u_View, false, obj.view.flatten());
-    gl.uniformMatrix4fv(u_Projection, false, obj.projection.flatten());
+    gl.uniformMatrix4fv(u_Model, false, world.multiply(obj.getXForm()).flatten());
+    gl.uniformMatrix4fv(u_View, false, view.flatten());
+    gl.uniformMatrix4fv(u_Projection, false, projection.flatten());
 
     gl.uniform3f(u_Color, color.r, color.g, color.b);
 
@@ -594,9 +602,7 @@ function render_depth(gl, obj, rangeStart, rangeDepth) {
     gl.deleteBuffer(buffer.vertices);
 }
 
-function render_edge(gl, obj) {
-    let color = obj.color !== undefined ? obj.color : WHITE.copy();
-
+function render_edge(gl, obj, color, world, view, projection) {
     let vert = `#version 100
         attribute vec4 a_Position;
         attribute vec4 a_Normal;
@@ -642,9 +648,9 @@ function render_edge(gl, obj) {
 
     GET_UNIFORM(u_Color, gl, 'u_Color')
 
-    gl.uniformMatrix4fv(u_Model, false, obj.model.flatten());
-    gl.uniformMatrix4fv(u_View, false, obj.view.flatten());
-    gl.uniformMatrix4fv(u_Projection, false, obj.projection.flatten());
+    gl.uniformMatrix4fv(u_Model, false, world.multiply(obj.getXForm()).flatten());
+    gl.uniformMatrix4fv(u_View, false, view.flatten());
+    gl.uniformMatrix4fv(u_Projection, false, projection.flatten());
 
     gl.uniform3f(u_Color, color.r, color.g, color.b);
 

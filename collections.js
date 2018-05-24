@@ -42,31 +42,40 @@ PolylineList.prototype = {
 };
 
 
-let CylinderList = function() {
-    this.count = 0;
-    this.data  = [];
+let ModelList = function(insertCallBack) {
+    this.count          = 0;
+    this.data           = [];
+    this.insertCallBack = insertCallBack !== undefined ? insertCallBack : ((i, model) => i);
 };
 
-CylinderList.prototype = {
-    insert: function(cylinder) {
+ModelList.prototype = {
+    insert: function(model) {
         let i = 0;
         for (; i < this.data.length; i++) {
             if (this.data[i] === undefined)
                 break;
         }
 
-        this.data[i] = cylinder;
+        this.data[i] = model;
         this.count  += 1;
-        return i;
+
+        return this.insertCallBack(i, this.data[i]);
     },
 
     at: function(i) {
         return this.data[i];
     },
-    map: function(cb) {
-        for (let i = 0; i < this.data.length; i++)
+    map: function(callBack) {
+        for (let i = 0; i < this.data.length; i++) {
             if (this.data[i] !== undefined)
-                cb(i, this.data[i]);
+                callBack(i, this.data[i]);
+        }
+    },
+    mapVisible: function(callBack) {
+        for (let i = 0; i < this.data.length; i++) {
+            if (this.data[i] !== undefined && this.data[i].visible())
+                callBack(i, this.data[i]);
+        }
     },
 
     remove: function(i) {

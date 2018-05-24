@@ -4,9 +4,8 @@
 
 @tile-margin:             10px;
 @tile-padding:            4px;
-@controls-top-width:      calc(@controls-left-width + @tile-margin + 2 * @tile-padding
-                               + @webgl-width);
-@controls-top-height:     200px;
+@controls-top-width:      calc(@controls-left-width + 2 * @tile-margin + @webgl-width);
+@controls-top-height:     225px;
 @controls-left-width:     250px;
 @controls-left-height:    @webgl-height;
 @controls-bottom-width:   @controls-top-width;
@@ -73,8 +72,8 @@
     display: inline-flex;
 }
 
-@webgl-width:             500px;
-@webgl-height:            500px;
+@webgl-width:             600px;
+@webgl-height:            450px;
 @webgl-background-color:  black;
 
 #g-webgl
@@ -231,7 +230,17 @@
     }
 }
 
-div#geometry
+div#editor
+{
+    span.align
+    {
+        display: inline-block;
+        text-align: left;
+        width: 70px;
+    }
+}
+
+div#view
 {
     span.align
     {

@@ -16,16 +16,18 @@ let WIDTH          = null;
 let HEIGHT         = null;
 let COLOR          = null;
 
-let SELECTED       = 255;
-let FOCUSED        = 255;
-
-let ROTATE_X       = 180;
+let ROTATE_X       = 0;
 let ROTATE_Y       = 0;
 let ROTATE_Z       = 0;
 
 let TRANSLATE_X    = 0;
 let TRANSLATE_Y    = 0;
 let TRANSLATE_Z    = 0;
+
+let MODELS         = null;
+
+let SELECTED       = null;
+let FOCUSED        = null;
 
 let CAMERA_EYE     = new Vector(0, 0, 350);
 let CAMERA_CENTER  = ORIGIN;
@@ -106,7 +108,7 @@ function init() {
 
     $('.tab-labels').each(function(i, elem) {
         let e   = $(elem);
-        let def = e.attr('data-default');
+        let def = e.attr('data-default') || e.children('label').first().attr('for');
         set_current_tab(elem, def);
 
         e.children('label').each(function(i, elem) {
@@ -117,6 +119,8 @@ function init() {
             });
         });
     });
+
+    setupIOSOR('file-picker');
 }
 
 function set_current_tab(tabs_elem, label_for) {
@@ -152,6 +156,62 @@ function main() {
 function start(gl) {
     gl.enable(gl.DEPTH_TEST);
 
+    let width  = parseInt(WIDTH);
+    let height = parseInt(HEIGHT);
+
+    MODELS = new ModelList(function(i, model) {
+        $('div#model-pane').append(`
+            <div id="model-${i}" class="item">
+                <label>${i}:</label>
+                <input id="model-select-${i}" name="models" class="select" type="radio" />
+                <label for="model-select-${i}">${model.getName()}</label>
+                <input id="model-hide-${i}" name="models" type="checkbox" />
+                <label for="model-hide-${i}"><i class="fas fa-eye-slash"></i></label>
+                <button class="remove"><i class="fas fa-times"></i></button>
+            </div>
+        `);
+
+        let selector = $(`#model-select-${i}`);
+        selector.on('change', function(e) {
+            if ($(e.target).prop('checked'))
+                select_model(gl, i);
+        });
+        selector.prop('checked', true).change();
+
+        $(`#model-hide-${i}`).on('change', function(e) {
+            MODELS.at(i).visible(! $(e.target).prop('checked'));
+            update(gl);
+        });
+
+        let controls = $(`div#model-${i}`);
+        controls.children('.remove').click(function() {
+            if (SELECTED === i)
+                select_model(gl, null);
+            controls.remove();
+            MODELS.remove(i);
+            update(gl);
+        });
+    });
+    select_model(gl, null);
+
+    {
+        let sphere   = (new Sphere(ORIGIN, 100)).toTriangles(50, 50);
+        let mySphere = new Model('My Sphere 1', sphere.indices, sphere.vertices, {
+            color: new RGBColor(0.2, 0.2, 1.0)
+        });
+
+        MODELS.insert(mySphere);
+    }
+    {
+        let sphere   = (new Sphere(ORIGIN, 40)).toTriangles(25, 25);
+        let mySphere = new Model('My Sphere 2', sphere.indices, sphere.vertices, {
+            color: new RGBColor(0.2, 1.0, 0.2)
+        });
+        mySphere.setTranslateX(200);
+
+        MODELS.insert(mySphere);
+    }
+
     CANVAS.mousedown(function(e) {
         switch (e.which) {
         case 1:
@@ -162,8 +222,13 @@ function start(gl) {
             gl.readPixels(mouse.x, mouse.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, result);
             console.log('Clicked pixel color:', result);
 
-            SELECTED = result[3];
-            update(gl);
+            let i = 255 - (result[3] + 1);
+            if (i < 0) {
+                $('form#models input.select').prop('checked', false);
+                select_model(gl, null);
+            } else {
+                $(`#model-select-${i}`).prop('checked', true).change();
+            }
             break;
         }
     });
@@ -179,13 +244,13 @@ function start(gl) {
         update(gl);
     });
 
-    init_angle_slider(GETTER_SETTER(ROTATE_X), 'rotate-x', UPDATE_GL);
-    init_angle_slider(GETTER_SETTER(ROTATE_Y), 'rotate-y', UPDATE_GL);
-    init_angle_slider(GETTER_SETTER(ROTATE_Z), 'rotate-z', UPDATE_GL);
+    init_angle_slider(GETTER_SETTER(ROTATE_X), 'rotate-world-x', UPDATE_GL);
+    init_angle_slider(GETTER_SETTER(ROTATE_Y), 'rotate-world-y', UPDATE_GL);
+    init_angle_slider(GETTER_SETTER(ROTATE_Z), 'rotate-world-z', UPDATE_GL);
 
-    init_coord_slider(GETTER_SETTER(TRANSLATE_X), 'translate-x', UPDATE_GL);
-    init_coord_slider(GETTER_SETTER(TRANSLATE_Y), 'translate-y', UPDATE_GL);
-    init_coord_slider(GETTER_SETTER(TRANSLATE_Z), 'translate-z', UPDATE_GL);
+    init_space_slider(width,  GETTER_SETTER(TRANSLATE_X), 'translate-world-x', UPDATE_GL);
+    init_space_slider(height, GETTER_SETTER(TRANSLATE_Y), 'translate-world-y', UPDATE_GL);
+    init_space_slider(250,    GETTER_SETTER(TRANSLATE_Z), 'translate-world-z', UPDATE_GL);
 
     $('#' + PROJECTION).prop('checked', true);
     $('form#projection input[name=projection]').on('change', function(e) {
@@ -202,9 +267,10 @@ function start(gl) {
 
     init_color_picker(GETTER_SETTER(DIRECT_COLOR), 'light-direct-color', UPDATE_GL);
 
-    init_coord_slider(GETTER_SETTER(POINT_X), 'light-point-x', UPDATE_GL);
-    init_coord_slider(GETTER_SETTER(POINT_Y), 'light-point-y', UPDATE_GL);
-    init_coord_slider(GETTER_SETTER(POINT_Z), 'light-point-z', UPDATE_GL);
+    init_space_slider(width,  GETTER_SETTER(POINT_X), 'light-point-x', UPDATE_GL);
+    init_space_slider(height, GETTER_SETTER(POINT_Y), 'light-point-y', UPDATE_GL);
+    init_space_slider(250,    GETTER_SETTER(POINT_Z), 'light-point-z', UPDATE_GL);
+
     init_color_picker(GETTER_SETTER(POINT_COLOR), 'light-point-color', UPDATE_GL);
 
     $('#' + light.AMBIANT).prop('checked', LIGHT.ambiant);
@@ -274,6 +340,52 @@ function start(gl) {
     update(gl);
 }
 
+function select_model(gl, i) {
+    if (i < 0)
+        i = null;
+    SELECTED = i;
+    console.log('Selected model:', SELECTED);
+
+    let width  = parseInt(WIDTH);
+    let height = parseInt(HEIGHT);
+    if (i === null) {
+        init_angle_slider(CONST(0), 'rotate-model-x', VOID);
+        init_angle_slider(CONST(0), 'rotate-model-y', VOID);
+        init_angle_slider(CONST(0), 'rotate-model-z', VOID);
+
+        init_space_slider(width,  CONST(0), 'translate-model-x', VOID);
+        init_space_slider(height, CONST(0), 'translate-model-y', VOID);
+        init_space_slider(250,    CONST(0), 'translate-model-z', VOID);
+        
+        init_scale_slider(5, CONST(0), 'scale-model-x', VOID);
+        init_scale_slider(5, CONST(0), 'scale-model-y', VOID);
+        init_scale_slider(5, CONST(0), 'scale-model-z', VOID);
+
+        $('div#editor input[type=range]').prop('disabled', true);
+    } else {
+        init_space_slider(width, function(value) {
+            let model = MODELS.at(i);
+
+            if (value !== undefined) {
+                model.setTranslateX(value);
+            } else {
+                return model.getTranslateX();
+            }
+        }, 'translate-model-x', UPDATE_GL);
+
+        init_scale_slider(5, function(value) {
+            let model = MODELS.at(i);
+
+            if (value !== undefined) {
+                model.setScaleX(value);
+            } else {
+                return model.getScaleX();
+            }
+        }, 'scale-model-x', UPDATE_GL);
+    }
+    update(gl);
+}
+
 function init_angle_slider(var_fn, range_id, render_fn) {
     init_range({
         id: range_id,
@@ -306,12 +418,12 @@ function init_angle_slider(var_fn, range_id, render_fn) {
     });
 }
 
-function init_coord_slider(var_fn, range_id, render_fn) {
+function init_space_slider(delta, var_fn, range_id, render_fn) {
     init_range({
         id: range_id,
         value: var_fn(),
-        min: -250,
-        max: 250,
+        min: -delta,
+        max: delta,
         step: 5,
 
         parse: function(value) {
@@ -330,6 +442,25 @@ function init_coord_slider(var_fn, range_id, render_fn) {
             else
                 value = '-' + value;
             return value;
+        },
+
+        update: function() {
+            render_fn();
+        }
+    });
+}
+
+function init_scale_slider(delta, var_fn, range_id, render_fn) {
+    init_range({
+        id: range_id,
+        value: var_fn(),
+        min: 0,
+        max: delta,
+        step: 0.05,
+
+        parse: function(value) {
+            var_fn(parseFloat(value));
+            return Math.abs(var_fn()).toFixed(2);
         },
 
         update: function() {
@@ -374,13 +505,13 @@ function init_direc_slider(var_fn, range_id, render_fn) {
 function update(gl) {
     clear(gl, COLOR);
 
-    let model = new Matrix();
-    model     = model.rotateX(Radians.fromDegrees(ROTATE_X));
-    model     = model.rotateY(Radians.fromDegrees(ROTATE_Y));
-    model     = model.rotateZ(Radians.fromDegrees(ROTATE_Z));
+    let world = new Matrix();
+    world     = world.rotateX(Radians.fromDegrees(ROTATE_X));
+    world     = world.rotateY(Radians.fromDegrees(ROTATE_Y));
+    world     = world.rotateZ(Radians.fromDegrees(ROTATE_Z));
     {
         let vec = new Vector(TRANSLATE_X, TRANSLATE_Y, TRANSLATE_Z);
-        model   = model.translate(vec);
+        world   = world.translate(vec);
     }
 
     let view = Matrix.lookAt({
@@ -389,15 +520,17 @@ function update(gl) {
         up:      CAMERA_UP
     });
 
+    let width  = parseInt(WIDTH);
+    let height = parseInt(HEIGHT);
     let proj;
 
     switch (PROJECTION) {
     case projection.ORTHOGRAPHIC:
         proj = Matrix.ortho({
-            left: -250,
-            right: 250,
-            bottom: -250,
-            top: 250,
+            left: -(width / 2),
+            right: width / 2,
+            bottom: -(height / 2),
+            top: height / 2,
             near: 1,
             far: 1000
         });
@@ -405,50 +538,12 @@ function update(gl) {
     case projection.PERSPECTIVE:
         proj = Matrix.perspective({
             fovy: Radians.fromDegrees(60),
-            aspect: 1,
+            aspect: width / height,
             near: 1,
             far: 1000
         });
         break;
     }
-
-    let sides = 50;
-    let obj;
-
-    switch (SHAPE) {
-    case shape.CYLINDER:
-        let left_end  = new Vector(-150,  0);
-        let right_end = new Vector( 150,  0);
-        let cylinder  = new Cylinder(left_end, right_end, 50);
-
-        obj = cylinder.toTriangles(sides);
-        break;
-    case shape.SPHERE:
-        let sphere = new Sphere(ORIGIN, 100);
-
-        obj = sphere.toTriangles(sides, sides);
-        break;
-    }
-
-    let color = new RGBColor(0.2, 0.2, 1.0, 254 / 255);
-
-    switch (SELECTED) {
-    case 254:
-        obj.color = color.copy();
-        break;
-    case 255:
-        obj.color = color.scale(0.75);
-        break;
-    }
-    switch (FOCUSED) {
-    case 254:
-        obj.color = obj.color.scale(1.1);
-        break;
-    }
-
-    obj.model      = model;
-    obj.view       = view;
-    obj.projection = proj;
 
     let lights = {};
 
@@ -474,24 +569,28 @@ function update(gl) {
     else
         lights.specular = null;
 
-    switch (SHADING) {
-    case shading.FLAT:
-        render_flat(gl, obj, lights);
-        break;
-    case shading.GOURAUD:
-        render_gouraud(gl, obj, lights);
-        break;
-    case shading.PHONG:
-        render_phong(gl, obj, lights);
-        break;
-    case shading.NORMAL:
-        render_normal(gl, obj);
-        break;
-    case shading.DEPTH:
-        render_depth(gl, obj, 250, 50);
-        break;
-    case shading.EDGE:
-        render_edge(gl, obj);
-        break;
-    }
+    MODELS.mapVisible(function(i, model) {
+        let color = model.getColor().setAlpha((255 - (i + 1)) / 255);
+
+        switch (SHADING) {
+        case shading.FLAT:
+            render_flat(gl, model, color, world, view, proj, lights);
+            break;
+        case shading.GOURAUD:
+            render_gouraud(gl, model, color, world, view, proj, lights);
+            break;
+        case shading.PHONG:
+            render_phong(gl, model, color, world, view, proj, lights);
+            break;
+        case shading.NORMAL:
+            render_normal(gl, model, world, view, proj);
+            break;
+        case shading.DEPTH:
+            render_depth(gl, model, color, world, view, proj, 250, 50);
+            break;
+        case shading.EDGE:
+            render_edge(gl, model, color, world, view, proj);
+            break;
+        }
+    });
 }

@@ -159,7 +159,8 @@ Sphere.prototype = {
             obj.indices.push(j2);
             obj.indices.push(j);
         }
-        let top_vertex  = new Vector(0, 0, this.radius);
+        let top_vertex  = new Vector(
+            this.center.x, this.center.y, this.center.z + this.radius);
         let top_polygon = polygons[0];
         obj.vertices.push(top_vertex);
         obj.vertices = obj.vertices.concat(top_polygon);
@@ -205,7 +206,8 @@ Sphere.prototype = {
             obj.indices.push(j);
             obj.indices.push(j2);
         }
-        let bottom_vertex  = new Vector(0, 0, -this.radius);
+        let bottom_vertex  = new Vector(
+            this.center.x, this.center.y, this.center.z - this.radius);
         let bottom_polygon = polygons[polygons.length - 1];
         obj.vertices = obj.vertices.concat(bottom_polygon);
         obj.vertices.push(bottom_vertex);
@@ -215,8 +217,8 @@ Sphere.prototype = {
 };
 
 let Cylinder = function(end1, end2, radius, color) {
-    this.end1   = end1.copy();
-    this.end2   = end2.copy();
+    this.end1 = end1.copy();
+    this.end2 = end2.copy();
 
     end1.z = 0;
     end2.z = 0;
@@ -352,6 +354,111 @@ Cylinder.prototype = {
     toTriangles: function(sides) {
         return this.toObj('toTriangles', 'bridgeTrigsIndices', sides);
     },
+};
+
+
+let Model = function(name, indices, vertices, args) {
+    args = $.extend({
+        color: WHITE,
+        show:  true
+    }, args);
+
+    this.name     = name.slice();
+    this.indices  = indices.slice();
+    this.vertices = vertices.slice();
+
+    this.rotateX = 0;
+    this.rotateY = 0;
+    this.rotateZ = 0;
+
+    this.translateX = 0;
+    this.translateY = 0;
+    this.translateZ = 0;
+
+    this.scaleX = 1;
+    this.scaleY = 1;
+    this.scaleZ = 1;
+
+    this.color     = args.color.copy();
+    this.isVisible = args.show;
+};
+
+Model.prototype = {
+    getName: function() {
+        return this.name.slice();
+    },
+
+    visible: function(show) {
+        if (show !== undefined)
+            this.isVisible = show;
+
+        return this.isVisible;
+    },
+
+    setRotateX: function(rotateX) {
+        this.rotateX = rotateX;
+    },
+    setRotateY: function(rotateY) {
+        this.rotateY = rotateY;
+    },
+    setRotateZ: function(rotateZ) {
+        this.rotateZ = rotateZ;
+    },
+
+    getTranslateX: function() {
+        return this.translateX;
+    },
+    setTranslateX: function(translateX) {
+        this.translateX = translateX;
+    },
+
+    setTranslateY: function(translateY) {
+        this.translateY = translateY;
+    },
+    setTranslateZ: function(translateZ) {
+        this.translateZ = translateZ;
+    },
+
+    getScaleX: function() {
+        return this.scaleX;
+    },
+    setScaleX: function(scaleX) {
+        this.scaleX = scaleX;
+    },
+
+    getXForm: function() {
+        let xform = new Matrix();
+
+        xform = xform.rotateX(this.rotateX);
+        xform = xform.rotateY(this.rotateY);
+        xform = xform.rotateZ(this.rotateZ);
+
+        let scaleVec = new Vector(this.scaleX, this.scaleY, this.scaleZ);
+        xform        = xform.scale(scaleVec);
+        
+        let translateVec = new Vector(this.translateX, this.translateY, this.translateZ);
+        xform            = xform.translate(translateVec);
+
+
+        return xform;
+    },
+
+    getColor: function() {
+        return this.color;
+    },
+    setColor: function(color) {
+        this.color = color.copy();
+    },
+
+    toSOR: function() {
+        let xform    = this.getXForm();
+        let vertices = this.vertices.map(v => xform.multiply(v));
+        return new SOR(this.name.slice(), vertices, this.indices.slice());
+    },
+};
+
+Model.fromSOR = function(objSOR) {
+    return new Model(objSOR.objName, objSOR.indexes, objSOR.vertices);
 };
 
 
