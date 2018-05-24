@@ -67,12 +67,13 @@ let projection = {
 let PROJECTION = projection.PERSPECTIVE;
 
 let shading = {
-    FLAT:    'shading-flat',
-    GOURAUD: 'shading-gouraud',
-    PHONG:   'shading-phong',
-    NORMAL:  'shading-normal',
-    DEPTH:   'shading-depth',
-    EDGE:    'shading-edge'
+    FLAT:           'shading-flat',
+    GOURAUD:        'shading-gouraud',
+    PHONG:          'shading-phong',
+    NORMAL:         'shading-normal',
+    DEPTH:          'shading-depth',
+    EDGE:           'shading-edge',
+    EDGE_SELECTION: 'shading-edge-selection'
 };
 let SHADING = shading.PHONG;
 
@@ -180,7 +181,7 @@ function start(gl) {
 
         $(`#model-hide-${i}`).on('change', function(e) {
             MODELS.at(i).visible(! $(e.target).prop('checked'));
-            update(gl);
+            render(gl);
         });
 
         let controls = $(`div#model-${i}`);
@@ -189,7 +190,7 @@ function start(gl) {
                 select_model(gl, null);
             controls.remove();
             MODELS.remove(i);
-            update(gl);
+            render(gl);
         });
     });
     select_model(gl, null);
@@ -203,7 +204,7 @@ function start(gl) {
         MODELS.insert(mySphere);
     }
     {
-        let sphere   = (new Sphere(ORIGIN, 40)).toTriangles(25, 25);
+        let sphere   = (new Sphere(ORIGIN, 40)).toTriangles(50, 50);
         let mySphere = new Model('My Sphere 2', sphere.indices, sphere.vertices, {
             color: new RGBColor(0.2, 1.0, 0.2)
         });
@@ -218,7 +219,7 @@ function start(gl) {
             let mouse  = get_mouse_xy(CANVAS, e);
             let result = new Uint8Array(4);
 
-            update(gl);  // Needed because drawing buffer isn't preserved
+            picking_render(gl);
             gl.readPixels(mouse.x, mouse.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, result);
             console.log('Clicked pixel color:', result);
 
@@ -237,58 +238,64 @@ function start(gl) {
         let mouse  = get_mouse_xy(CANVAS, e);
         let result = new Uint8Array(4);
 
-        update(gl);  // Needed because drawing buffer isn't preserved
+        picking_render(gl);
         gl.readPixels(mouse.x, mouse.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, result);
 
-        FOCUSED = result[3];
-        update(gl);
+        let i = 255 - (result[3] + 1);
+        if (i < 0) {
+            FOCUSED = null;
+        } else {
+            FOCUSED = i;
+            console.log('Focused model:', FOCUSED);
+        }
+        render(gl);
     });
 
-    init_angle_slider(GETTER_SETTER(ROTATE_X), 'rotate-world-x', UPDATE_GL);
-    init_angle_slider(GETTER_SETTER(ROTATE_Y), 'rotate-world-y', UPDATE_GL);
-    init_angle_slider(GETTER_SETTER(ROTATE_Z), 'rotate-world-z', UPDATE_GL);
+    init_angle_slider(GETTER_SETTER(ROTATE_X), 'rotate-world-x', RENDER);
+    init_angle_slider(GETTER_SETTER(ROTATE_Y), 'rotate-world-y', RENDER);
+    init_angle_slider(GETTER_SETTER(ROTATE_Z), 'rotate-world-z', RENDER);
 
-    init_space_slider(width,  GETTER_SETTER(TRANSLATE_X), 'translate-world-x', UPDATE_GL);
-    init_space_slider(height, GETTER_SETTER(TRANSLATE_Y), 'translate-world-y', UPDATE_GL);
-    init_space_slider(250,    GETTER_SETTER(TRANSLATE_Z), 'translate-world-z', UPDATE_GL);
+    init_space_slider(width,  GETTER_SETTER(TRANSLATE_X), 'translate-world-x', RENDER);
+    init_space_slider(height, GETTER_SETTER(TRANSLATE_Y), 'translate-world-y', RENDER);
+    init_space_slider(250,    GETTER_SETTER(TRANSLATE_Z), 'translate-world-z', RENDER);
 
     $('#' + PROJECTION).prop('checked', true);
     $('form#projection input[name=projection]').on('change', function(e) {
         let elem   = $(e.target);
         PROJECTION = elem.attr('id');
-        update(gl);
+        render(gl);
     });
 
-    init_color_picker(GETTER_SETTER(AMBIANT_COLOR), 'light-ambiant-color', UPDATE_GL);
+    init_color_picker(GETTER_SETTER(AMBIANT_COLOR), 'light-ambiant-color', RENDER);
 
-    init_direc_slider(GETTER_SETTER(DIRECT_X), 'light-direct-x', UPDATE_GL);
-    init_direc_slider(GETTER_SETTER(DIRECT_Y), 'light-direct-y', UPDATE_GL);
-    init_direc_slider(GETTER_SETTER(DIRECT_Z), 'light-direct-z', UPDATE_GL);
+    init_direc_slider(GETTER_SETTER(DIRECT_X), 'light-direct-x', RENDER);
+    init_direc_slider(GETTER_SETTER(DIRECT_Y), 'light-direct-y', RENDER);
+    init_direc_slider(GETTER_SETTER(DIRECT_Z), 'light-direct-z', RENDER);
 
-    init_color_picker(GETTER_SETTER(DIRECT_COLOR), 'light-direct-color', UPDATE_GL);
+    init_color_picker(GETTER_SETTER(DIRECT_COLOR), 'light-direct-color', RENDER);
 
-    init_space_slider(width,  GETTER_SETTER(POINT_X), 'light-point-x', UPDATE_GL);
-    init_space_slider(height, GETTER_SETTER(POINT_Y), 'light-point-y', UPDATE_GL);
-    init_space_slider(250,    GETTER_SETTER(POINT_Z), 'light-point-z', UPDATE_GL);
+    init_space_slider(width,  GETTER_SETTER(POINT_X), 'light-point-x', RENDER);
+    init_space_slider(height, GETTER_SETTER(POINT_Y), 'light-point-y', RENDER);
+    init_space_slider(250,    GETTER_SETTER(POINT_Z), 'light-point-z', RENDER);
 
-    init_color_picker(GETTER_SETTER(POINT_COLOR), 'light-point-color', UPDATE_GL);
+    init_color_picker(GETTER_SETTER(POINT_COLOR), 'light-point-color', RENDER);
 
     $('#' + light.AMBIANT).prop('checked', LIGHT.ambiant);
     $('#' + light.AMBIANT).on('change', function(e) {
         LIGHT.ambiant = $(e.target).prop('checked');
-        update(gl);
+        render(gl);
     });
 
     $('#' + light.DIRECT).prop('checked', LIGHT.direct);
     $('#' + light.DIRECT).on('change', function(e) {
         LIGHT.direct = $(e.target).prop('checked');
-        update(gl);
+        render(gl);
     });
 
     $('#' + light.POINT).prop('checked', LIGHT.point);
     $('#' + light.POINT).on('change', function(e) {
         LIGHT.point = $(e.target).prop('checked');
-        update(gl);
+        render(gl);
     });
 
     init_range({
@@ -313,31 +320,31 @@ function start(gl) {
         },
 
         update: function() {
-            update(gl);
+            render(gl);
         }
     });
 
     $('#' + light.SPECULAR).prop('checked', LIGHT.specular);
     $('#' + light.SPECULAR).on('change', function(e) {
         LIGHT.specular = $(e.target).prop('checked');
-        update(gl);
+        render(gl);
     });
 
     $('#' + SHADING).prop('checked', true);
     $('form#shading-type input[name=shading-type]').on('change', function(e) {
         let elem = $(e.target);
         SHADING  = elem.attr('id');
-        update(gl);
+        render(gl);
     });
 
     $('#' + SHAPE).prop('checked', true);
     $('form#shape-type input[name=shape-type]').on('change', function(e) {
         let elem = $(e.target);
         SHAPE    = elem.attr('id');
-        update(gl);
+        render(gl);
     });
 
-    update(gl);
+    render(gl);
 }
 
 function select_model(gl, i) {
@@ -371,7 +378,7 @@ function select_model(gl, i) {
             } else {
                 return model.getTranslateX();
             }
-        }, 'translate-model-x', UPDATE_GL);
+        }, 'translate-model-x', RENDER);
 
         init_scale_slider(5, function(value) {
             let model = MODELS.at(i);
@@ -381,9 +388,9 @@ function select_model(gl, i) {
             } else {
                 return model.getScaleX();
             }
-        }, 'scale-model-x', UPDATE_GL);
+        }, 'scale-model-x', RENDER);
     }
-    update(gl);
+    render(gl);
 }
 
 function init_angle_slider(var_fn, range_id, render_fn) {
@@ -502,7 +509,7 @@ function init_direc_slider(var_fn, range_id, render_fn) {
 }
 
 
-function update(gl) {
+function render(gl) {
     clear(gl, COLOR);
 
     let world = new Matrix();
@@ -570,7 +577,7 @@ function update(gl) {
         lights.specular = null;
 
     MODELS.mapVisible(function(i, model) {
-        let color = model.getColor().setAlpha((255 - (i + 1)) / 255);
+        let color         = model.getColor();
 
         switch (SHADING) {
         case shading.FLAT:
@@ -589,8 +596,81 @@ function update(gl) {
             render_depth(gl, model, color, world, view, proj, 250, 50);
             break;
         case shading.EDGE:
-            render_edge(gl, model, color, world, view, proj);
+            render_edge(gl, model, TRUE_BLACK, color, 1/2, world, view, proj);
             break;
+        case shading.EDGE_SELECTION:
+            render_edge_selection(gl, i, model, color, world, view, proj);
         }
+    });
+}
+
+function render_edge_selection(gl, i, model, color, world, view, projection) {
+    color = color.scale(0.5);
+
+    let selectedColor = WHITE.scale(0.8);
+    let focusedColor  = selectedColor.scale(0.8);
+
+    if (i === SELECTED) {
+        render_edge(gl, model, color, selectedColor, 1/2, world, view, projection);
+    } else if (i === FOCUSED) {
+        render_edge(gl, model, color, focusedColor, 1/8, world, view, projection);
+    } else {
+        render_edge(gl, model, color, TRUE_BLACK, 0, world, view, projection);
+    }
+}
+
+function picking_render(gl) {
+    clear(gl, TRUE_BLACK);
+
+    let world = new Matrix();
+    world     = world.rotateX(Radians.fromDegrees(ROTATE_X));
+    world     = world.rotateY(Radians.fromDegrees(ROTATE_Y));
+    world     = world.rotateZ(Radians.fromDegrees(ROTATE_Z));
+    {
+        let vec = new Vector(TRANSLATE_X, TRANSLATE_Y, TRANSLATE_Z);
+        world   = world.translate(vec);
+    }
+
+    let view = Matrix.lookAt({
+        eye:     CAMERA_EYE,
+        center:  CAMERA_CENTER,
+        up:      CAMERA_UP
+    });
+
+    let width  = parseInt(WIDTH);
+    let height = parseInt(HEIGHT);
+    let proj;
+
+    switch (PROJECTION) {
+    case projection.ORTHOGRAPHIC:
+        proj = Matrix.ortho({
+            left: -(width / 2),
+            right: width / 2,
+            bottom: -(height / 2),
+            top: height / 2,
+            near: 1,
+            far: 1000
+        });
+        break;
+    case projection.PERSPECTIVE:
+        proj = Matrix.perspective({
+            fovy: Radians.fromDegrees(60),
+            aspect: width / height,
+            near: 1,
+            far: 1000
+        });
+        break;
+    }
+
+    let lights = {
+        ambiant:  null,
+        direct:   null,
+        point:    null,
+        specular: null
+    };
+
+    MODELS.mapVisible(function(i, model) {
+        let color = TRUE_BLACK.copy().setAlpha((255 - (i + 1)) / 255);
+        render_flat(gl, model, color, world, view, proj, lights);
     });
 }

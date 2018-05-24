@@ -17,8 +17,8 @@
 #define GETTER_SETTER(NAME)                                 \
     ((value) => value !== undefined ? NAME = value : NAME)
 
-#define UPDATE_GL       \
-    (() => update(gl))
+#define RENDER          \
+    (() => render(gl))
 
 #define VOID           \
     (() => undefined)
@@ -85,7 +85,7 @@ function init_color_picker(var_fn, picker_id, render_fn) {
 
 
 function clear(gl, color) {
-    color = color ? color.copy() : BLACK.copy();
+    color = color ? color.copy() : TRUE_BLACK.copy();
 
     gl.clearColor(color.r, color.g, color.b, color.a);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -602,7 +602,7 @@ function render_depth(gl, obj, color, world, view, projection, rangeStart, range
     gl.deleteBuffer(buffer.vertices);
 }
 
-function render_edge(gl, obj, color, world, view, projection) {
+function render_edge(gl, obj, color, edgeColor, exponent, world, view, projection) {
     let vert = `#version 100
         attribute vec4 a_Position;
         attribute vec4 a_Normal;
@@ -624,7 +624,9 @@ function render_edge(gl, obj, color, world, view, projection) {
     let frag = `#version 100
         precision mediump float;
 
-        uniform vec3 u_Color;
+        uniform vec3  u_Color;
+        uniform vec3  u_EdgeColor;
+        uniform float u_Exponent;
 
         varying vec4 v_Position;
         varying vec4 v_Normal;
@@ -632,8 +634,8 @@ function render_edge(gl, obj, color, world, view, projection) {
         void main(void)
         {
             float edgeFactor = dot(normalize(-v_Position.xyz), v_Normal.xyz);
-            edgeFactor       = 1.0 - max(0.0, min(edgeFactor, 1.0));
-            gl_FragColor     = vec4(edgeFactor * u_Color, 1.0);
+            edgeFactor       = 1.0 - max(0.0, min(pow(edgeFactor, u_Exponent), 1.0));
+            gl_FragColor     = vec4(edgeFactor * u_EdgeColor + u_Color, 1.0);
         }    
     `;
 
@@ -646,13 +648,17 @@ function render_edge(gl, obj, color, world, view, projection) {
     GET_UNIFORM(u_View,       gl, 'u_View')
     GET_UNIFORM(u_Projection, gl, 'u_Projection')
 
-    GET_UNIFORM(u_Color, gl, 'u_Color')
+    GET_UNIFORM(u_Color,     gl, 'u_Color')
+    GET_UNIFORM(u_EdgeColor, gl, 'u_EdgeColor')
+    GET_UNIFORM(u_Exponent,  gl, 'u_Exponent')
 
     gl.uniformMatrix4fv(u_Model, false, world.multiply(obj.getXForm()).flatten());
     gl.uniformMatrix4fv(u_View, false, view.flatten());
     gl.uniformMatrix4fv(u_Projection, false, projection.flatten());
 
     gl.uniform3f(u_Color, color.r, color.g, color.b);
+    gl.uniform3f(u_EdgeColor, edgeColor.r, edgeColor.g, edgeColor.b);
+    gl.uniform1f(u_Exponent, exponent);
 
     let count = obj.indices.length;
     obj       = normalize_obj_average(obj);
