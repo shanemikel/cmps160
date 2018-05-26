@@ -1,5 +1,8 @@
 #pragma once
 
+/*
+ *   COPYRIGHT: Shane Pearlman 2018
+ */
 
 #define ORIGIN (new Vector(0, 0, 0))
 

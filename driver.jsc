@@ -1,3 +1,7 @@
+/*
+ *   COPYRIGHT: Shane Pearlman 2018
+ */
+
 #include "shapes.jsc"
 #include "collections.jsc"
 #include "util.jsc"

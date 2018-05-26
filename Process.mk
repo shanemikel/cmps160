@@ -1,3 +1,7 @@
+#
+#  COPYRIGHT: Shane Pearlman 2018
+#
+
 VENDOR_DIR  = vendor
 ifdef USE_CDN
 DEFINES    += -DUSE_CDN

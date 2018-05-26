@@ -1,3 +1,7 @@
+/*
+ *   Copyright Shane Pearlman 2018
+ */
+
 #pragma once
 
 #include "shapes.jsc"

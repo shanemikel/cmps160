@@ -1,5 +1,9 @@
 #!/bin/bash
 
+#
+#  COPYRIGHT: Shane Pearlman 2018
+#
+
 USER=smpearlm
 HOST=unix.ucsc.edu
 

@@ -1,5 +1,9 @@
 #pragma once
 
+/*
+ *   COPYRIGHT: Shane Pearlman 2018
+ */
+
 #include "util.jsc"
 
 
