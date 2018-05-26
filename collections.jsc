@@ -1,6 +1,6 @@
 #pragma once
 
-#include "shapes.js"
+#include "shapes.jsc"
 
 
 let PolylineList = function(color) {

@@ -9,19 +9,26 @@
 <meta name="viewport" content="width=device-width" />
 <meta id="g-colors" />
 <meta id="g-webgl" />
+
+#ifdef DEBUG
 <link href="driver.css" rel="stylesheet" />
+#else
+<link href="driver.min.css" rel="stylesheet" />
+#endif
+
 #include "head-end.htm"
 #include "body-start.htm"
 
 <div id="controls-top" class="controls">
   <div class="tab-labels" data-default="view">
-    <label for="models">Models</label>
+    <label for="model">Model</label>
     <label for="editor">Editor</label>
     <label for="view">View</label>
     <label for="lighting">Lighting</label>
     <label for="shading">Shading</label>
+    <label for="physics" data-disabled="disabled">Physics</label>
   </div>
-  <div id="models" class="tab">
+  <div id="model" class="tab">
     <div class="group">
       <span class="group">
 	<input id="file-picker" type="file" />
@@ -222,26 +229,33 @@
     </div>
   </div>
   <div id="shading" class="tab">
-    <div class="group">
-      <form id="shading-type">
-	<span class="group">
-	  <input id="shading-flat" name="shading-type" type="radio" />
-	  <label for="shading-flat">Flat</label>
-	  <input id="shading-gouraud" name="shading-type" type="radio" />
-	  <label for="shading-gouraud">Gouraud</label>
-	  <input id="shading-phong" name="shading-type" type="radio" />
-	  <label for="shading-phong">Phong</label>
-	  <input id="shading-normal" name="shading-type" type="radio" />
-	  <label for="shading-normal">Normal</label>
-	  <input id="shading-depth" name="shading-type" type="radio" />
-	  <label for="shading-depth">Depth</label>
-	  <input id="shading-edge" name="shading-type" type="radio" />
-	  <label for="shading-edge">Edge</label>
-	  <input id="shading-edge-selection" name="shading-type" type="radio" />
-	  <label for="shading-edge-selection">Edge-selection</label>
-	</span>
-      </form>
-    </div>
+    <form id="shading-type">
+      <div class="group">
+	Standard
+	<input id="shading-flat" name="shading-type" type="radio" />
+	<label for="shading-flat">Flat</label>
+	<input id="shading-gouraud" name="shading-type" type="radio" />
+	<label for="shading-gouraud">Gouraud</label>
+	<input id="shading-phong" name="shading-type" type="radio" />
+	<label for="shading-phong">Phong</label>
+      </div>
+      <div class="group">
+	Utility
+	<input id="shading-normal" name="shading-type" type="radio" />
+	<label for="shading-normal">Normal</label>
+	<input id="shading-depth" name="shading-type" type="radio" />
+	<label for="shading-depth">Depth</label>
+	<input id="shading-edge" name="shading-type" type="radio" />
+	<label for="shading-edge">Edge</label>
+	<input id="shading-edge-selection" name="shading-type" type="radio" />
+	<label for="shading-edge-selection">Edge-selection</label>
+      </div>
+      <div class="group">
+	Effect
+	<input id="shading-red-cyan" name="shading-type" type="radio" disabled />
+	<label for="shading-red-cyan">Red/Cyan Anaglyph 3D</label>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -272,5 +286,11 @@
 </div>
 
 #include "webgl-libs.htm"
-<script src="driver.jsc"></script>
+
+#ifdef DEBUG
+<script src="driver.js"></script>
+#else
+<script src="driver.min.js"></script>
+#endif
+
 #include "body-end.htm"

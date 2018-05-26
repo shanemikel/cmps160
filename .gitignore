@@ -1,7 +1,6 @@
-*.jsc
+*.js
 *.css
 *.html
 
 lib
-vendor
 assg-07.tar.gz

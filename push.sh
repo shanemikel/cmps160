@@ -6,7 +6,8 @@ HOST=unix.ucsc.edu
 PASS=ucsc.edu/smpearlm/blue
 
 workdir=$(cd "$(dirname "$0")"; pwd)
-dist="$(basename "$workdir").tar.gz"
+project="$(basename "$workdir")"
+dist="$project.tar.gz"
 webdir='public_html'
 
 /usr/bin/expect <(cat <<HERE
@@ -25,7 +26,9 @@ expect "?ast login:"
 send "cd \"$webdir\"\n"
 expect "*$webdir"
 expect "*$webdir"
-send "tar --overwrite -xvf \"$dist\"\n"
+send "rm -rf \"$project\"\n"
+expect "*$webdir"
+send "tar -xvf \"$dist\"\n"
 expect "*$webdir"
 HERE
 )

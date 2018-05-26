@@ -1,8 +1,6 @@
-#include "shapes.js"
-#include "collections.js"
-#include "util.js"
-
-#define GL_BLEND
+#include "shapes.jsc"
+#include "collections.jsc"
+#include "util.jsc"
 
 let WHITE          = null;
 let BLACK          = null;
@@ -76,7 +74,8 @@ let shading = {
     NORMAL:         'shading-normal',
     DEPTH:          'shading-depth',
     EDGE:           'shading-edge',
-    EDGE_SELECTION: 'shading-edge-selection'
+    EDGE_SELECTION: 'shading-edge-selection',
+    RED_CYAN:       'shading-red-cyan'
 };
 let SHADING = shading.PHONG;
 
@@ -158,14 +157,7 @@ function main() {
 }
 
 function start(gl) {
-
-#ifdef GL_BLEND
-    gl.disable(gl.DEPTH_TEST);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-    gl.enable(gl.BLEND);
-#else
     gl.enable(gl.DEPTH_TEST);
-#endif
 
     let width  = parseInt(WIDTH);
     let height = parseInt(HEIGHT);
@@ -208,7 +200,7 @@ function start(gl) {
     {
         let sphere   = (new Sphere(ORIGIN, 100)).toTriangles(50, 50);
         let mySphere = new Model('My Sphere 1', sphere.indices, sphere.vertices, {
-            color: new RGBColor(0.2, 0.2, 1.0, 0.8)
+            color: new RGBColor(0.2, 0.2, 1.0)
         });
 
         MODELS.insert(mySphere);
@@ -229,8 +221,10 @@ function start(gl) {
             let mouse  = get_mouse_xy(CANVAS, e);
             let result = new Uint8Array(4);
 
+#ifdef DEBUG
             gl.readPixels(mouse.x, mouse.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, result);
             console.log('Clicked pixel color:', result);
+#endif
 
             picking_render(gl);
             gl.readPixels(mouse.x, mouse.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, result);
@@ -627,6 +621,7 @@ function render(gl) {
             break;
         case shading.EDGE_SELECTION:
             render_edge_selection(gl, i, model, color, world, view, proj);
+            break;
         }
     });
 }
