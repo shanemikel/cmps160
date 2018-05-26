@@ -1,1 +1,76 @@
-driver.min.html
+<!doctype html><html lang=en><meta charset=utf-8><title>Assignment 7</title><link href=vendor/normalize-8.0.0.min.css rel=stylesheet><link href=vendor/fonts.css rel=stylesheet><script src=vendor/fontawesome-5.0.10.all.js></script><script src=vendor/jquery-3.3.1.slim.min.js></script><meta name=viewport content="width=device-width"><meta id=g-colors><meta id=g-webgl><link href=driver.min.css rel=stylesheet><body onload=main()><div id=controls-top class=controls><div class=tab-labels data-default=view><label for=model data-disabled=disabled>Model</label>
+<label for=editor>Editor</label>
+<label for=view>View</label>
+<label for=lighting>Lighting</label>
+<label for=shading>Shading</label>
+<label for=physics data-disabled=disabled>Physics</label></div><div id=model class=tab><div class=group><span class=group><input id=file-picker type=file>
+<button type=button>Extract SOR</button>
+<button type=button>Save</button>
+<button type=button>Reset</button></span></div><div class=group><span class=group><button id=new-cylinder>New Cylinder</button></span>
+<span class=group>Side-count
+<input id=cylinder-side-count type=range>
+<label for=cylinder-side-count></label></span><span class=group>Radius
+<input id=cylinder-radius type=range>
+<label for=cylinder-radius></label></span><span class=group><input id=cylinder-name type=text></span></div><div class=group><span class=group><button id=new-sphere>New Sphere</button></span>
+<span class=group>Polygon Count
+<input id=sphere-polygon-count type=range>
+<label for=sphere-polygon-count></label></span><span class=group>Polygon Sides
+<input id=sphere-polygon-sides type=range>
+<label for=sphere-polygon-sides></label></span><span class=group><input id=sphere-name type=text></span></div></div><div id=editor class=tab><div class=group><span class="group align">Rotate</span>
+<span class=group>X <input id=rotate-model-x type=range>
+<label for=rotate-model-x></label></span><span class=group>Y <input id=rotate-model-y type=range>
+<label for=rotate-model-y></label></span><span class=group>Z <input id=rotate-model-z type=range>
+<label for=rotate-model-z></label></span></div><div class=group><span class="group align">Translate</span>
+<span class=group>X <input id=translate-model-x type=range>
+<label for=translate-model-x></label></span><span class=group>Y <input id=translate-model-y type=range>
+<label for=translate-model-y></label></span><span class=group>Z <input id=translate-model-z type=range>
+<label for=translate-model-z></label></span></div><div class=group><span class="group align">Scale</span>
+<span class=group>X <input id=scale-model-x type=range>
+<label for=scale-model-x></label></span><span class=group>Y <input id=scale-model-y type=range>
+<label for=scale-model-y></label></span><span class=group>Z <input id=scale-model-z type=range>
+<label for=scale-model-z></label></span></div></div><div id=view class=tab><div class=group><span class="group align">Rotate</span>
+<span class=group>X <input id=rotate-world-x type=range>
+<label for=rotate-world-x></label></span><span class=group>Y <input id=rotate-world-y type=range>
+<label for=rotate-world-y></label></span><span class=group>Z <input id=rotate-world-z type=range>
+<label for=rotate-world-z></label></span></div><div class=group><span class="group align">Translate</span>
+<span class=group>X <input id=translate-world-x type=range>
+<label for=translate-world-x></label></span><span class=group>Y <input id=translate-world-y type=range>
+<label for=translate-world-y></label></span><span class=group>Z <input id=translate-world-z type=range>
+<label for=translate-world-z></label></span></div><div class=group><form id=projection><span class=group><input id=projection-orthographic name=projection type=radio>
+<label for=projection-orthographic>Orthographic</label>
+<input id=projection-perspective name=projection type=radio>
+<label for=projection-perspective>Perspective</label></span></form></div></div><div id=lighting class=tab><div class=group><span class=group><input id=light-ambiant type=checkbox>
+<label for=light-ambiant>Ambiant</label>
+<input id=light-ambiant-color type=color></span></div><div class=group><span class=group><input id=light-direct type=checkbox>
+<label for=light-direct>Direct</label>
+<input id=light-direct-color type=color></span>
+<span class=group>X <input id=light-direct-x type=range>
+<label for=light-direct-x></label></span><span class=group>Y <input id=light-direct-y type=range>
+<label for=light-direct-y></label></span><span class=group>Z <input id=light-direct-z type=range>
+<label for=light-direct-z></label></span></div><div class=group><span class=group><input id=light-point type=checkbox>
+<label for=light-point>Point</label>
+<input id=light-point-color type=color></span>
+<span class=group>X <input id=light-point-x type=range>
+<label for=light-point-x></label></span><span class=group>Y <input id=light-point-y type=range>
+<label for=light-point-y></label></span><span class=group>Z <input id=light-point-z type=range>
+<label for=light-point-z></label></span></div><div class=group><span class=group><input id=light-specular type=checkbox>
+<label for=light-specular>Specular</label>
+<input id=light-specular-power type=range>
+<label for=light-specular-power></input></span></div></div><div id=shading class=tab><form id=shading-type><div class=group>Standard
+<input id=shading-flat name=shading-type type=radio>
+<label for=shading-flat>Flat</label>
+<input id=shading-gouraud name=shading-type type=radio>
+<label for=shading-gouraud>Gouraud</label>
+<input id=shading-phong name=shading-type type=radio>
+<label for=shading-phong>Phong</label></div><div class=group>Utility
+<input id=shading-normal name=shading-type type=radio>
+<label for=shading-normal>Normal</label>
+<input id=shading-depth name=shading-type type=radio>
+<label for=shading-depth>Depth</label>
+<input id=shading-edge name=shading-type type=radio>
+<label for=shading-edge>Edge</label>
+<input id=shading-edge-selection name=shading-type type=radio>
+<label for=shading-edge-selection>Edge-selection</label></div><div class=group>Effect
+<input id=shading-red-cyan name=shading-type type=radio disabled>
+<label for=shading-red-cyan>Red/Cyan Anaglyph 3D</label></div></form></div></div><script type=text/javascript>$('.tab').each(function(i,elem){$(elem).prop('hidden',true);});</script><div class=flex-container><div id=controls-left class=controls><label for=model-pane>Model Manager</label><form id=models><div id=model-pane class=group></div></form></div><div id=webgl-mask><canvas id=webgl oncontextmenu="return false;">
+Please use a browser that supports "canvas"</canvas></div></div><div id=controls-bottom class=controls hidden><label for=console>Console</label><div id=console class=group></div></div><script src=lib/webgl-utils.js></script><script src=lib/webgl-debug.js></script><script src=lib/cuon-utils.js></script><script src=lib/ioSOR.js></script><script src=driver.min.js></script>
