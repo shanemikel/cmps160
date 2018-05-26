@@ -2,6 +2,8 @@
 #include "collections.js"
 #include "util.js"
 
+#define GL_BLEND
+
 let WHITE          = null;
 let BLACK          = null;
 let RED            = null;
@@ -14,6 +16,7 @@ let LIGHT_GREY     = null;
 let CANVAS         = null;
 let WIDTH          = null;
 let HEIGHT         = null;
+let DEPTH          = 250;
 let COLOR          = null;
 
 let ROTATE_X       = 0;
@@ -42,10 +45,10 @@ let DIRECT_COLOR   = TRUE_WHITE.scale(0.8);
 
 let POINT_X        = 250;
 let POINT_Y        = 150;
-let POINT_Z        = -125;
+let POINT_Z        = 250;
 let POINT_COLOR    = TRUE_WHITE.scale(0.8);
 
-let SPECULAR_POWER = 8;
+let SPECULAR_POWER = 12;
 
 let light = {
     AMBIANT:  'light-ambiant',
@@ -155,7 +158,14 @@ function main() {
 }
 
 function start(gl) {
+
+#ifdef GL_BLEND
+    gl.disable(gl.DEPTH_TEST);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+    gl.enable(gl.BLEND);
+#else
     gl.enable(gl.DEPTH_TEST);
+#endif
 
     let width  = parseInt(WIDTH);
     let height = parseInt(HEIGHT);
@@ -198,7 +208,7 @@ function start(gl) {
     {
         let sphere   = (new Sphere(ORIGIN, 100)).toTriangles(50, 50);
         let mySphere = new Model('My Sphere 1', sphere.indices, sphere.vertices, {
-            color: new RGBColor(0.2, 0.2, 1.0)
+            color: new RGBColor(0.2, 0.2, 1.0, 0.8)
         });
 
         MODELS.insert(mySphere);
@@ -219,9 +229,12 @@ function start(gl) {
             let mouse  = get_mouse_xy(CANVAS, e);
             let result = new Uint8Array(4);
 
-            picking_render(gl);
             gl.readPixels(mouse.x, mouse.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, result);
             console.log('Clicked pixel color:', result);
+
+            picking_render(gl);
+            gl.readPixels(mouse.x, mouse.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, result);
+            console.log('Alpha-picking pixel color:', result);
 
             let i = 255 - (result[3] + 1);
             if (i < 0) {
@@ -257,7 +270,7 @@ function start(gl) {
 
     init_space_slider(width,  GETTER_SETTER(TRANSLATE_X), 'translate-world-x', RENDER);
     init_space_slider(height, GETTER_SETTER(TRANSLATE_Y), 'translate-world-y', RENDER);
-    init_space_slider(250,    GETTER_SETTER(TRANSLATE_Z), 'translate-world-z', RENDER);
+    init_space_slider(DEPTH,  GETTER_SETTER(TRANSLATE_Z), 'translate-world-z', RENDER);
 
     $('#' + PROJECTION).prop('checked', true);
     $('form#projection input[name=projection]').on('change', function(e) {
@@ -276,7 +289,7 @@ function start(gl) {
 
     init_space_slider(width,  GETTER_SETTER(POINT_X), 'light-point-x', RENDER);
     init_space_slider(height, GETTER_SETTER(POINT_Y), 'light-point-y', RENDER);
-    init_space_slider(250,    GETTER_SETTER(POINT_Z), 'light-point-z', RENDER);
+    init_space_slider(DEPTH,  GETTER_SETTER(POINT_Z), 'light-point-z', RENDER);
 
     init_color_picker(GETTER_SETTER(POINT_COLOR), 'light-point-color', RENDER);
 
@@ -348,6 +361,8 @@ function start(gl) {
 }
 
 function select_model(gl, i) {
+    const SCALE = 5;
+
     if (i < 0)
         i = null;
     SELECTED = i;
@@ -362,33 +377,45 @@ function select_model(gl, i) {
 
         init_space_slider(width,  CONST(0), 'translate-model-x', VOID);
         init_space_slider(height, CONST(0), 'translate-model-y', VOID);
-        init_space_slider(250,    CONST(0), 'translate-model-z', VOID);
+        init_space_slider(DEPTH,  CONST(0), 'translate-model-z', VOID);
         
-        init_scale_slider(5, CONST(0), 'scale-model-x', VOID);
-        init_scale_slider(5, CONST(0), 'scale-model-y', VOID);
-        init_scale_slider(5, CONST(0), 'scale-model-z', VOID);
+        init_scale_slider(SCALE, CONST(1), 'scale-model-x', VOID);
+        init_scale_slider(SCALE, CONST(1), 'scale-model-y', VOID);
+        init_scale_slider(SCALE, CONST(1), 'scale-model-z', VOID);
 
         $('div#editor input[type=range]').prop('disabled', true);
     } else {
-        init_space_slider(width, function(value) {
-            let model = MODELS.at(i);
+        let model_space_slider = function(delta, getterName, setterName, sliderID) {
+            init_space_slider(delta, function(value) {
+                let model = MODELS.at(i);
 
-            if (value !== undefined) {
-                model.setTranslateX(value);
-            } else {
-                return model.getTranslateX();
-            }
-        }, 'translate-model-x', RENDER);
+                if (value !== undefined) {
+                    model[setterName](value);
+                } else {
+                    return model[getterName]();
+                }
+            }, sliderID, RENDER);
+        };
 
-        init_scale_slider(5, function(value) {
-            let model = MODELS.at(i);
+        let model_scale_slider = function(getterName, setterName, sliderID) {
+            init_scale_slider(SCALE, function(value) {
+                let model = MODELS.at(i);
 
-            if (value !== undefined) {
-                model.setScaleX(value);
-            } else {
-                return model.getScaleX();
-            }
-        }, 'scale-model-x', RENDER);
+                if (value !== undefined) {
+                    model[setterName](value);
+                } else {
+                    return model[getterName]();
+                }
+            }, sliderID, RENDER);
+        };
+
+        model_space_slider(width,  'getTranslateX', 'setTranslateX', 'translate-model-x');
+        model_space_slider(height, 'getTranslateY', 'setTranslateY', 'translate-model-y');
+        model_space_slider(DEPTH,  'getTranslateZ', 'setTranslateZ', 'translate-model-z');
+
+        model_scale_slider('getScaleX', 'setScaleX', 'scale-model-x');
+        model_scale_slider('getScaleY', 'setScaleY', 'scale-model-y');
+        model_scale_slider('getScaleZ', 'setScaleZ', 'scale-model-z');
     }
     render(gl);
 }

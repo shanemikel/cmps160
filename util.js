@@ -154,7 +154,7 @@ function phong_shaders() {
             if (u_SpecularPower >= 0.0)
                 light  += pow(specularIntensity, u_SpecularPower) * u_PointLightColor;
 
-            gl_FragColor = vec4(v_Color.xyz * light, v_Color.a);
+            gl_FragColor = vec4(light * v_Color.rgb, v_Color.a);
         }    
     `;
 
@@ -187,7 +187,6 @@ function flat_and_gouraud_shaders() {
         {
             gl_Position = u_View * u_Model * a_Position;
             vec4 normal = u_Model * a_Normal;
-            vec3 color  = a_Color.rgb;
 
             float directIntensity = max(dot(u_DirectLight, normal.xyz), 0.0);
 
@@ -205,8 +204,7 @@ function flat_and_gouraud_shaders() {
             if (u_SpecularPower >= 0.0)
                 light  += pow(specularIntensity, u_SpecularPower) * u_PointLightColor;
 
-            color      *= light;
-            v_Color     = vec4(color, a_Color.a);
+            v_Color     = vec4(light * a_Color.rgb, a_Color.a);
 
             gl_Position = u_Projection * gl_Position;
         }`;
@@ -250,6 +248,8 @@ function render_obj(shaders, normalize_fn) {
 
         GET_UNIFORM(u_SpecularPower,     gl, 'u_SpecularPower')
 
+        let light_xform    = view.multiply(world);
+
         let ambiant_light;
         if (lights.ambiant !== null)
             ambiant_light  = lights.ambiant;
@@ -270,7 +270,7 @@ function render_obj(shaders, normalize_fn) {
             point_light    = lights.point;
         else
             point_light    = PointLight.neutral();
-        let pl_pos         = world.multiply(point_light.getPosition());
+        let pl_pos         = view.multiply(world).multiply(point_light.getPosition());
         let pl_col         = point_light.getColor();
 
         let specular_light;

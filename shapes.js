@@ -395,11 +395,22 @@ Model.prototype = {
         return this.isVisible;
     },
 
+    getRotateX: function() {
+        return this.rotateX;
+    },
     setRotateX: function(rotateX) {
         this.rotateX = rotateX;
     },
+
+    getRotateY: function() {
+        return this.rotateY;
+    },
     setRotateY: function(rotateY) {
         this.rotateY = rotateY;
+    },
+
+    getRotateZ: function() {
+        return this.rotateZ;
     },
     setRotateZ: function(rotateZ) {
         this.rotateZ = rotateZ;
@@ -412,8 +423,15 @@ Model.prototype = {
         this.translateX = translateX;
     },
 
+    getTranslateY: function() {
+        return this.translateY;
+    },
     setTranslateY: function(translateY) {
         this.translateY = translateY;
+    },
+
+    getTranslateZ: function() {
+        return this.translateZ;
     },
     setTranslateZ: function(translateZ) {
         this.translateZ = translateZ;
@@ -424,6 +442,20 @@ Model.prototype = {
     },
     setScaleX: function(scaleX) {
         this.scaleX = scaleX;
+    },
+
+    getScaleY: function() {
+        return this.scaleY;
+    },
+    setScaleY: function(scaleY) {
+        this.scaleY = scaleY;
+    },
+
+    getScaleZ: function() {
+        return this.scaleZ;
+    },
+    setScaleZ: function(scaleZ) {
+        this.scaleZ = scaleZ;
     },
 
     getXForm: function() {
