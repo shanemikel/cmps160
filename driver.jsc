@@ -313,7 +313,7 @@ function start(gl) {
         id: 'light-specular-power',
         value: SPECULAR_POWER,
         min: 2,
-        max: 32,
+        max: 128,
         step: 2,
 
         parse: function(value) {
@@ -590,11 +590,10 @@ function render(gl) {
     else
         lights.direct   = null;
 
-    if (LIGHT.point)
-        lights.point    = new PointLight(new Vector(POINT_X, POINT_Y, POINT_Z),
+    lights.point        = new PointLight(new Vector(POINT_X, POINT_Y, POINT_Z),
                                         POINT_COLOR);
-    else
-        lights.point    = null;
+    if (! LIGHT.point)
+        lights.point.setOn(false);
 
     if (LIGHT.specular)
         lights.specular = new SpecularLight(SPECULAR_POWER);
@@ -606,13 +605,13 @@ function render(gl) {
 
         switch (SHADING) {
         case shading.FLAT:
-            render_flat(gl, model, color, world, view, proj, lights);
+            render_flat(gl, model, color, world, view, proj, CAMERA_EYE, lights);
             break;
         case shading.GOURAUD:
-            render_gouraud(gl, model, color, world, view, proj, lights);
+            render_gouraud(gl, model, color, world, view, proj, CAMERA_EYE, lights);
             break;
         case shading.PHONG:
-            render_phong(gl, model, color, world, view, proj, lights);
+            render_phong(gl, model, color, world, view, proj, CAMERA_EYE, lights);
             break;
         case shading.NORMAL:
             render_normal(gl, model, world, view, proj);
@@ -697,6 +696,6 @@ function picking_render(gl) {
 
     MODELS.mapVisible(function(i, model) {
         let color = TRUE_BLACK.copy().setAlpha((255 - (i + 1)) / 255);
-        render_flat(gl, model, color, world, view, proj, lights);
+        render_flat(gl, model, color, world, view, proj, CAMERA_EYE, lights);
     });
 }

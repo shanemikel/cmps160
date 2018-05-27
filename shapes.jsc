@@ -959,9 +959,10 @@ DirectLight.neutral = function() {
     return new DirectLight(ORIGIN, TRUE_BLACK);
 };
 
-let PointLight = function(position, color) {
+let PointLight = function(position, color, on) {
     this.position = position.copy();
     this.color    = color.copy();
+    this.on       = on !== undefined ? on : true;
 };
 
 PointLight.prototype = {
@@ -977,6 +978,13 @@ PointLight.prototype = {
     },
     setColor: function(color) {
         this.color = color.copy();
+    },
+
+    setOn: function(on) {
+        this.on = on !== undefined ? on : true;
+    },
+    getOn: function() {
+        return this.on;
     },
 
     copy: function() {

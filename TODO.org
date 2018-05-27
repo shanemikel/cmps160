@@ -1,0 +1,98 @@
+
+* Assignment 2
+** 1E
+   Intersections between sections of your generalized cylinder are
+   covered so there are no "gaps"
+** 4R
+   The user can save the model currently on screen to an OBJ file
+** 5R
+   The user can load and display a model from an OBJ file
+** 4E
+   The user can delete a specific cylinder
+** 7E
+   When you finish drawing a cylinder, print to console the volume of
+   the cylinder
+** 8E
+   When you finish drawing the cylinder, print to console the volume
+   of the cylinder
+
+* Assignment 3
+** 1E
+   Have a button that, when pressed, rotates the light direction about
+   the y-axis
+** 5E
+   Have a button that, when pressed, plays a little animation
+   involving the lights
+** 6E
+   Be able to load models from outside sources, and apply your shaders
+   to them
+
+* Assignment 4
+** 6E
+   Implement a toon/cell shader
+
+* Assignment 5
+** 1E
+   Implement part of your UI within the canvas.  At least 2
+   interactable items should be put inside the canvas
+** 5E
+   Be able to click and highlight beteween multiple objects
+   
+* Assignment 6
+** 2R
+   If the user holds down the left-click and drags across the screen,
+   the currently selected object is translated accordingly within the
+   XY-plane.
+** 3R
+   If the user scrolls with the scroll-wheel, the currently selected
+   object is translated accordingly 
+** 4R
+   If the user holds down the right-click and drags across the screen,
+   the currently selected object is rotated accordingly
+** 1E
+   If the user holds down the middle mouse button (scroll wheel) and
+   moves the mouse up and down, the currently seslected object is
+   translated accordingly along the Z-axis
+** 2E
+   If the user holds down the middle mouse button (scroll wheel) and
+   move the mouse left and right, the currently selected object is
+   rotated along the Z-axis
+** 4E
+   Have an object in your scene that emits light (as a point light
+   source) and be able to transform it
+** 5E
+   Make a button that, when pressed, makes all of the objects in your
+   scene spin about the Y-axis indefinitely
+** 6E
+   Have a button that, when pressed, makes all of the objects in your
+   scene move in a square path in the XY-plane
+** 7E
+   Have a button that, when clicked, causes all of your objects to
+   fall as if there was gravity
+** 8E
+   Be able to apply a shear transformation
+** 9E
+   Be able to apply a twist transformation
+
+* Assignment 7
+** 1R
+   Be able to pan the camera.  That is, move the camera along the
+   XY-plane without changing the direction of the camera
+** 2R
+   Be able to move the camera forward and backward without changing
+   the camera direction
+** 3R
+   Be able to zoom in and out
+** 4R
+   Lighting should match camera changes
+** 1E
+   Be able to turn the camera left and right (about the Y-axis)
+** 2E
+   Be able to rotate the camera about the Z-axis (spin)
+** 3E
+   Be able to pan around a specific object with an animation (as in
+   the demo)
+** 4E
+   Be able to make the camera shake with an animation
+** 5E
+   Be able to stretch the scene with the camera
