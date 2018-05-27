@@ -37,6 +37,53 @@ Polyline.prototype = {
 };
 
 
+let Cube = function(center, sideLength) {
+    this.center = center;
+    this.side   = sideLength;
+};
+
+Cube.prototype = {
+    getCenter: function() {
+        return this.center.copy();
+    },
+    setCenter: function(center) {
+        this.center = center.copy();
+    },
+
+    getSideLength: function() {
+        return this.side;
+    },
+    setSideLength: function(sideLength) {
+        this.side = sideLength;
+    },
+
+    toSquares: function() {
+        let res    = [];
+        let delte  = this.side / 2;
+        let center = this.center;
+
+        res.push(center.plus(new Vector(-delta, -delta, -delta)));
+        res.push(center.plus(new Vector(-delta, -delta,  delta)));
+        res.push(center.plus(new Vector(-delta,  delta, -delta)));
+        res.push(center.plus(new Vector(-delta,  delta,  delta)));
+        res.push(center.plus(new Vector( delta, -delta, -delta)));
+        res.push(center.plus(new Vector( delta, -delta,  delta)));
+        res.push(center.plus(new Vector( delta,  delta, -delta)));
+        res.push(center.plus(new Vector( delta,  delta,  delta)));
+
+        return res;
+    },
+
+    toTriangles: function() {
+        let obj = {
+            vertices: this.toSquares(),
+            indices:  []
+        };
+
+    },
+};
+
+
 let Circle = function(center, radius) {
     this.center = center.copy();
     this.radius = radius;
@@ -507,7 +554,7 @@ let Vector = function(x, y, z, w) {
 
 Vector.prototype = {
     negate: function() {
-        return new Vector(-this.x, -this.y, -this.z);
+        return new Vector(-this.x, -this.y, -this.z, this.w);
     },
 
     magnitude: function() {
@@ -519,6 +566,9 @@ Vector.prototype = {
         /**  @return the unit-vector with direction of this
          */
         let len = this.magnitude();
+
+        if (len == 0)
+            return ORIGIN;
         return new Vector(this.x / len, this.y / len, this.z / len);
     },
 
