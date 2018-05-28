@@ -1,9 +1,9 @@
-<!doctype html><html lang=en><meta charset=utf-8><title>WebGL Demo</title><link href=vendor/normalize-8.0.0.min.css rel=stylesheet><link href=vendor/fonts.css rel=stylesheet><script src=vendor/fontawesome-5.0.10.all.js></script><script src=vendor/jquery-3.3.1.slim.min.js></script><meta name=viewport content="width=device-width"><meta id=g-colors><meta id=g-webgl><link href=driver.min.css rel=stylesheet><body onload=main()><div id=controls-top class=controls><div class=tab-labels data-default=view><label for=model data-disabled=disabled>Model</label>
+<!doctype html><html lang=en><meta charset=utf-8><title>WebGL Demo</title><link href=vendor/normalize-8.0.0.min.css rel=stylesheet><link href=vendor/fonts.css rel=stylesheet><script src=vendor/fontawesome-5.0.10.all.js></script><script src=vendor/jquery-3.3.1.slim.min.js></script><meta name=viewport content="width=device-width"><meta id=g-colors><meta id=g-webgl><link href=driver.min.css rel=stylesheet><body onload=main()><div id=controls-top class=controls><div class=tab-labels data-default=world><label for=model data-disabled=disabled>Model</label>
 <label for=editor>Editor</label>
-<label for=view>View</label>
+<label for=world>World</label>
 <label for=lighting>Lighting</label>
 <label for=shading>Shading</label>
-<label for=physics data-disabled=disabled>Physics</label></div><div id=model class=tab><div class=group><span class=group><input id=file-picker type=file>
+<label for=animation>Animation</label></div><div id=model class=tab><div class=group><span class=group><input id=file-picker type=file>
 <button type=button>Extract SOR</button>
 <button type=button>Save</button>
 <button type=button>Reset</button></span></div><div class=group><span class=group><button id=new-cylinder>New Cylinder</button></span>
@@ -28,7 +28,7 @@
 <span class=group>X <input id=scale-model-x type=range>
 <label for=scale-model-x></label></span><span class=group>Y <input id=scale-model-y type=range>
 <label for=scale-model-y></label></span><span class=group>Z <input id=scale-model-z type=range>
-<label for=scale-model-z></label></span></div></div><div id=view class=tab><div class=group><span class="group align">Rotate</span>
+<label for=scale-model-z></label></span></div></div><div id=world class=tab><div class=group><span class="group align">Rotate</span>
 <span class=group>X <input id=rotate-world-x type=range>
 <label for=rotate-world-x></label></span><span class=group>Y <input id=rotate-world-y type=range>
 <label for=rotate-world-y></label></span><span class=group>Z <input id=rotate-world-z type=range>
@@ -72,5 +72,7 @@
 <input id=shading-edge-selection name=shading-type type=radio>
 <label for=shading-edge-selection>Edge-selection</label></div><div class=group>Effect
 <input id=shading-red-cyan name=shading-type type=radio disabled>
-<label for=shading-red-cyan>Red/Cyan Anaglyph 3D</label></div></form></div></div><script type=text/javascript>$('.tab').each(function(i,elem){$(elem).prop('hidden',true);});</script><div class=flex-container><div id=controls-left class=controls><label for=model-pane>Model Manager</label><form id=models><div id=model-pane class=group></div></form></div><div id=webgl-mask><canvas id=webgl oncontextmenu="return false;">
+<label for=shading-red-cyan>Red/Cyan Anaglyph 3D</label></div></form></div><div id=animation class=tab><div class=group><button id=animate-rotate-about>Rotate Around Selection</button>
+<button id=animate-shake>Shake Camera</button>
+<button id=animate-stretch>Stretch Scene</button></div></div></div><script type=text/javascript>$('.tab').each(function(i,elem){$(elem).prop('hidden',true);});</script><div class=flex-container><div id=controls-left class=controls><label for=model-pane>Model Manager</label><form id=models><div id=model-pane class=group></div></form></div><div id=webgl-mask><canvas id=webgl oncontextmenu="return false;">
 Please use a browser that supports "canvas"</canvas></div></div><div id=controls-bottom class=controls hidden><label for=console>Console</label><div id=console class=group></div></div><script src=lib/webgl-utils.js></script><script src=lib/webgl-debug.js></script><script src=lib/cuon-utils.js></script><script src=lib/ioSOR.js></script><script src=driver.min.js></script>
