@@ -1,4 +1,4 @@
-PROJECT   := assg-07
+PROJECT   := assg-08
 MAIN      := driver
 JS_LIBS   := shapes collections util
 LESS_LIBS := palette widgets
