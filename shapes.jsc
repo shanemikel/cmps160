@@ -611,6 +611,11 @@ Vector.prototype = {
         );
     },
 
+    rotate: function(vector, radians) {
+        let xform = (new Matrix()).rotate(this, radians);
+        return xform.multiply(vector);
+    },
+
     toList: function() {
         return [this.x, this.y, this.z, this.w];
     },
@@ -664,6 +669,7 @@ Matrix.prototype = {
          *   @return a Matrix
          */
         let mat = new Matrix();
+
         mat.data[4 * 0 + 3] = vector.x;
         mat.data[4 * 1 + 3] = vector.y;
         mat.data[4 * 2 + 3] = vector.z;
@@ -676,6 +682,7 @@ Matrix.prototype = {
          *   @return a rotation Matrix
          */
         let mat = new Matrix();
+
         let row = 0;
         mat.data[4 * row + 0] = 1;
         mat.data[4 * row + 1] = 0;
@@ -688,6 +695,7 @@ Matrix.prototype = {
         mat.data[4 * row + 0] = 0;
         mat.data[4 * row + 1] = -Math.sin(radians);
         mat.data[4 * row + 2] = Math.cos(radians);
+
         return mat.multiply(this);
     },
 
@@ -696,6 +704,7 @@ Matrix.prototype = {
          *   @return a rotation Matrix
          */
         let mat = new Matrix();
+
         let row = 0;
         mat.data[4 * row + 0] = Math.cos(radians);
         mat.data[4 * row + 1] = 0;
@@ -708,6 +717,7 @@ Matrix.prototype = {
         mat.data[4 * row + 0] = Math.sin(radians);
         mat.data[4 * row + 1] = 0;
         mat.data[4 * row + 2] = Math.cos(radians);
+
         return mat.multiply(this);
     },
 
@@ -716,6 +726,7 @@ Matrix.prototype = {
          *   @return a rotation Matrix
          */
         let mat = new Matrix();
+        
         let row = 0;
         mat.data[4 * row + 0] = Math.cos(radians);
         mat.data[4 * row + 1] = Math.sin(radians);
@@ -728,6 +739,31 @@ Matrix.prototype = {
         mat.data[4 * row + 0] = 0;
         mat.data[4 * row + 1] = 0;
         mat.data[4 * row + 2] = 1;
+
+        return mat.multiply(this);
+    },
+
+    rotate: function(vector, radians) {
+        let mat  = new Matrix();
+        let axis = vector.unit();
+        let x    = axis.x;
+        let y    = axis.y;
+        let z    = axis.z;
+        let o    = radians;
+
+        let row = 0;
+        mat.data[4 * row + 0] = Math.cos(o) + Math.pow(x, 2) * (1 - Math.cos(o));
+        mat.data[4 * row + 1] = x * y * (1 - Math.cos(o)) - z * Math.sin(o);
+        mat.data[4 * row + 2] = x * z * (1 - Math.cos(o)) + y * Math.sin(o);
+        row = 1;
+        mat.data[4 * row + 0] = y * x * (1 - Math.cos(o)) + z * Math.sin(o);
+        mat.data[4 * row + 1] = Math.cos(o) + Math.pow(y, 2) * (1 - Math.cos(o));
+        mat.data[4 * row + 2] = y * z * (1 - Math.cos(o)) - x * Math.sin(o);
+        row = 2;
+        mat.data[4 * row + 0] = z * x * (1 - Math.cos(o)) - y * Math.sin(o);
+        mat.data[4 * row + 1] = z * y * (1 - Math.cos(o)) + x * Math.sin(o);
+        mat.data[4 * row + 2] = Math.cos(o) + Math.pow(z, 2) * (1 - Math.cos(o));
+
         return mat.multiply(this);
     },
 
@@ -784,28 +820,32 @@ Matrix.prototype = {
 Matrix.lookAt = function(args) {
     /**  Generate a camera Matrix
      *   @param args.eye the camera's position Vector
-     *   @param args.center the camera's direction Vector
+     *   @param args.at the camera's direction Vector
      *   @param args.up the camera's up Vector
      */
-    let f = args.center.sub(args.eye).unit();
-    let s = f.cross(args.up).unit();
+    let f = args.at.sub(args.eye).unit();
+    let s = f.cross(args.up.unit());
     let u = s.cross(f);
+    let t = args.eye.negate();
 
     let mat = new Matrix();
     let row = 0;
     mat.data[4 * row + 0] = s.x;
     mat.data[4 * row + 1] = s.y;
     mat.data[4 * row + 2] = s.z;
+    mat.data[4 * row + 3] = s.dot(t);
     row = 1;
     mat.data[4 * row + 0] = u.x;
     mat.data[4 * row + 1] = u.y;
     mat.data[4 * row + 2] = u.z;
+    mat.data[4 * row + 3] = u.dot(t);
     row = 2;
     mat.data[4 * row + 0] = -f.x;
     mat.data[4 * row + 1] = -f.y;
     mat.data[4 * row + 2] = -f.z;
+    mat.data[4 * row + 3] = -f.dot(t);
 
-    return mat.translate(args.eye.negate());
+    return mat;
 };
 
 Matrix.ortho = function(args) {
@@ -1062,4 +1102,83 @@ SpecularLight.prototype = {
 
 SpecularLight.neutral = function() {
     return new SpecularLight(-1);
+};
+
+
+let Camera = function(eye, front, up) {
+    this.eye     = eye.copy();
+    this.front   = front.unit();
+    this.front.w = 0;
+    this.up      = up.unit();
+    this.up.w    = 0;
+};
+
+Camera.prototype = {
+    getEye: function() {
+        return this.eye.copy();
+    },
+    setEye: function(eye) {
+        this.eye = eye.copy();
+    },
+
+    getAt: function() {
+        return this.eye.add(this.front);
+    },
+    setAt: function(at) {
+        this.front = at.sub(this.eye).unit();
+    },
+
+    getFront: function() {
+        return this.front.copy();
+    },
+    setFront: function(front) {
+        this.front   = front.unit();
+        this.front.w = 0;
+    },
+
+    getUp: function() {
+        return this.up.copy();
+    },
+    setUp: function(up) {
+        this.up   = up.unit();
+        this.up.w = 0;
+    },
+
+    moveForward: function(distance) {
+        this.eye = this.eye.add(this.front.scale(distance));
+    },
+    moveBackward: function(distance) {
+        this.eye = this.eye.sub(this.front.scale(distance));
+    },
+    
+    moveRight: function(distance) {
+        let right = this.front.cross(this.up);
+        this.eye  = this.eye.add(right.scale(distance));
+    },
+    moveLeft: function(distance) {
+        let right = this.front.cross(this.up);
+        this.eye  = this.eye.sub(right.scale(distance));
+    },
+
+    moveUp: function(distance) {
+        this.eye = this.eye.add(this.up.scale(distance));
+    },
+    moveDown: function(distance) {
+        this.eye = this.eye.sub(this.up.scale(distance));
+    },
+
+    yaw: function(radians) {
+        this.setFront(this.up.rotate(this.front, radians));
+    },
+    roll: function(radians) {
+        this.setUp(this.front.rotate(this.up, radians));
+    },
+
+    getView: function() {
+        return Matrix.lookAt({
+            eye: this.getEye(),
+            at:  this.getAt(),
+            up:  this.getUp()
+        });
+    },
 };

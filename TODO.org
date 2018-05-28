@@ -75,20 +75,6 @@
    Be able to apply a twist transformation
 
 * Assignment 7
-** 1R
-   Be able to pan the camera.  That is, move the camera along the
-   XY-plane without changing the direction of the camera
-** 2R
-   Be able to move the camera forward and backward without changing
-   the camera direction
-** 3R
-   Be able to zoom in and out
-** 4R
-   Lighting should match camera changes
-** 1E
-   Be able to turn the camera left and right (about the Y-axis)
-** 2E
-   Be able to rotate the camera about the Z-axis (spin)
 ** 3E
    Be able to pan around a specific object with an animation (as in
    the demo)

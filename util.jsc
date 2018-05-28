@@ -241,7 +241,7 @@ function flat_and_gouraud_shaders() {
 }
 
 function render_obj(shaders, normalize_fn) {
-    return function(gl, obj, color, world, view, projection, cameraPos, lights) {
+    return function(gl, obj, color, world, camera, projection, lights) {
         let vert    = shaders.vert;
         let frag    = shaders.frag;
 
@@ -301,7 +301,7 @@ function render_obj(shaders, normalize_fn) {
         let sl_pow         = specular_light.getPower();
 
         gl.uniformMatrix4fv(u_Model, false, world.multiply(obj.getXForm()).flatten());
-        gl.uniformMatrix4fv(u_View, false, view.flatten());
+        gl.uniformMatrix4fv(u_View, false, camera.getView().flatten());
         gl.uniformMatrix4fv(u_Projection, false, projection.flatten());
 
         gl.uniform3f(u_AmbiantLightColor, al_col.r, al_col.g, al_col.b);
@@ -312,6 +312,8 @@ function render_obj(shaders, normalize_fn) {
         gl.uniform3f(u_PointLight, pl_pos.x, pl_pos.y, pl_pos.z);
         gl.uniform3f(u_PointLightColor, pl_col.r, pl_col.g, pl_col.b);
         gl.uniform1i(u_PointLightOn, pl_on);
+
+        let cameraPos = camera.getEye();
 
         gl.uniform3f(u_CameraPosition, cameraPos.x, cameraPos.y, cameraPos.z);
         gl.uniform1f(u_SpecularPower, sl_pow);
@@ -880,4 +882,8 @@ function flattenF32(n, arr) {
             res[n * i + j] = arr[i][j];
     }
     return res;
+}
+
+function sleep(time) {
+    return new Promise((resolve) => setTimeout(resolve, time));
 }

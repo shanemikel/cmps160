@@ -34,9 +34,13 @@ let MODELS         = null;
 let SELECTED       = null;
 let FOCUSED        = null;
 
-let CAMERA_EYE     = new Vector(0, 0, 350);
-let CAMERA_CENTER  = ORIGIN;
-let CAMERA_UP      = new Vector(0, 1,   0);
+let CAMERA;
+{
+    let EYE        = new Vector(0, 0, 350);
+    let FRONT      = ORIGIN.sub(EYE);
+    let UP         = new Vector(0, 1,   0);
+    CAMERA         = new Camera(EYE, FRONT, UP);
+}
 
 let AMBIANT_COLOR  = TRUE_WHITE.scale(0.15);
 
@@ -52,6 +56,9 @@ let POINT_COLOR    = TRUE_WHITE.scale(0.8);
 
 let SPECULAR_POWER = 12;
 
+let TABS           = [];
+let TAB_COUNTER    = 0;
+
 let light = {
     AMBIANT:  'light-ambiant',
     DIRECT:   'light-direct',
@@ -64,6 +71,8 @@ let LIGHT = {
     point:    true,
     specular: true
 };
+
+let PERSPECTIVE_FOVY = 60;
 
 let projection = {
     ORTHOGRAPHIC: 'projection-orthographic',
@@ -88,6 +97,26 @@ let shape = {
     SPHERE:   'shape-sphere'
 };
 let SHAPE = shape.SPHERE;
+
+let KEYS = {
+    y:     89,
+    u:     85,
+
+    g:     71,
+    h:     72,
+
+    i:     73,
+    o:     79,
+
+    j:     74,
+    k:     75,
+    
+    LEFT:  37,
+    RIGHT: 39,
+
+    UP:    38,
+    DOWN:  40
+};
 
 
 function init() {
@@ -114,20 +143,64 @@ function init() {
     });
 
     $('.tab-labels').each(function(i, elem) {
-        let e   = $(elem);
+        let e  = $(elem);
+        let id = TAB_COUNTER++;
+
+        e.attr('data-id', id);
+        TABS[id] = [];
+
         let def = e.attr('data-default') || e.children('label').first().attr('for');
         set_current_tab(elem, def);
 
         e.children('label').each(function(i, elem) {
-            let label_for = $(elem).attr('for');
-            $(elem).click(function(ev) {
-                if ($(ev.target).attr('data-disabled') !== 'disabled')
-                    set_current_tab(e, label_for)
-            });
+            if ($(elem).attr('data-disabled') !== 'disabled')
+                TABS[id].push(`label[for=${$(elem).attr('for')}]`);
         });
+
+        enable_tabs(e);
     });
 
     setupIOSOR('file-picker');
+}
+
+function enable_tabs(e) {
+    if (e === undefined) {
+        $('.tab-labels').each((i, elem) => enable_tabs(elem));
+        return;
+    }
+
+    e = $(e);
+
+    let id = e.attr('data-id');
+    TABS[id].map(function(elem) {
+        $(elem).removeAttr('data-disabled');
+    });
+
+    e.children('label').each(function(i, elem) {
+        let label_for = $(elem).attr('for');
+        $(elem).click(function(ev) {
+            if ($(ev.target).attr('data-disabled') !== 'disabled')
+                set_current_tab(e, label_for)
+        });
+    });
+}
+
+function disable_tabs(e) {
+    if (e === undefined) {
+        $('.tab-labels').each((i, elem) => disable_tabs(elem));
+        return;
+    }
+
+    e = $(e);
+
+    let id = e.attr('data-id');
+    TABS[id].map(function(elem) {
+        $(elem).attr('data-disabled', 'disabled');
+    });
+
+    e.children('label').each(function(i, elem) {
+        $(elem).off('click');
+    });
 }
 
 function set_current_tab(tabs_elem, label_for) {
@@ -138,6 +211,7 @@ function set_current_tab(tabs_elem, label_for) {
         else
             e.addClass('current');
     });
+
     $(tabs_elem).nextAll('.tab').each(function(i, elem) {
         let e = $(elem);
         if (e.attr('id') !== label_for)
@@ -145,6 +219,40 @@ function set_current_tab(tabs_elem, label_for) {
         else
             e.prop('hidden', false);
     });
+}
+
+function begin_animation(buttonID) {
+    disable_tabs();
+    $('#animation button').each(function(i, elem) {
+        if (buttonID !== undefined) {
+            if ($(elem).attr('id') === buttonID)
+                $(elem).addClass('running');
+            else
+                $(elem).prop('disabled', true);
+        } else {
+            $(elem).prop('disabled', true);
+        }
+    });
+}
+
+function end_animation(buttonID) {
+    $('#animation button').each(function(i, elem) {
+        if (buttonID !== undefined) {
+            if ($(elem).attr('id') === buttonID)
+                $(elem).removeClass('running');
+            else
+                $(elem).prop('disabled', false);
+        } else {
+            $(elem).prop('disabled', false);
+        }
+    });
+    enable_tabs();
+}
+
+function do_animation(callback) {
+    begin_animation();
+    callback();
+    end_animation();
 }
 
 
@@ -194,6 +302,7 @@ function start(gl) {
         controls.children('.remove').click(function() {
             if (SELECTED === i)
                 select_model(gl, null);
+
             controls.remove();
             MODELS.remove(i);
             render(gl);
@@ -259,6 +368,64 @@ function start(gl) {
             FOCUSED = i;
             console.log('Focused model:', FOCUSED);
         }
+        render(gl);
+    });
+
+    $(document).on('keydown', function(e) {
+        if ($(e.target).is('input'))
+            return;
+        
+        console.log('Received keypress:', event.which);
+
+        switch (e.keyCode) {
+        case KEYS.y:
+            CAMERA.yaw(Radians.fromDegrees( 5));
+            break;
+        case KEYS.u:
+            CAMERA.yaw(Radians.fromDegrees(-5));
+            break;
+
+        case KEYS.g:
+            CAMERA.roll(Radians.fromDegrees( 5));
+            break;
+        case KEYS.h:
+            CAMERA.roll(Radians.fromDegrees(-5));
+            break;
+
+        case KEYS.i:
+            PERSPECTIVE_FOVY -= 5;
+            console.log('Camera FOV-Y:', PERSPECTIVE_FOVY);
+            break;
+        case KEYS.o:
+            PERSPECTIVE_FOVY += 5;
+            console.log('Camera FOV-Y:', PERSPECTIVE_FOVY);
+            break;
+
+        case KEYS.j:
+            CAMERA.moveForward(20);
+            break;
+        case KEYS.k:
+            CAMERA.moveBackward(20);
+            break;
+
+        case KEYS.LEFT:
+            CAMERA.moveLeft(10);
+            break;
+        case KEYS.RIGHT:
+            CAMERA.moveRight(10);
+            break;
+
+        case KEYS.UP:
+            CAMERA.moveUp(10);
+            break;
+        case KEYS.DOWN:
+            CAMERA.moveDown(10);
+            break;
+        }
+
+        console.log('CAMERA.eye:', CAMERA.getEye());
+        console.log('CAMERA.front:', CAMERA.getFront());
+        console.log('CAMERA.up:', CAMERA.getUp());
         render(gl);
     });
 
@@ -353,6 +520,28 @@ function start(gl) {
         let elem = $(e.target);
         SHAPE    = elem.attr('id');
         render(gl);
+    });
+
+    $('#animate-rotate-about').click(function() {
+        begin_animation('animate-rotate-about');
+        setTimeout(function() {
+            console.log('Animating...');
+            end_animation('animate-rotate-about');
+        }, 2000);
+    });
+    $('#animate-shake').click(function() {
+        begin_animation('animate-shake');
+        setTimeout(function() {
+            console.log('Animating...');
+            end_animation('animate-shake');
+        }, 2000);
+    });
+    $('#animate-stretch').click(function() {
+        begin_animation('animate-stretch');
+        setTimeout(function() {
+            console.log('Animating...');
+            end_animation('animate-stretch');
+        }, 2000);
     });
 
     render(gl);
@@ -546,11 +735,7 @@ function render(gl) {
         world   = world.translate(vec);
     }
 
-    let view = Matrix.lookAt({
-        eye:     CAMERA_EYE,
-        center:  CAMERA_CENTER,
-        up:      CAMERA_UP
-    });
+    let view = CAMERA.getView();
 
     let width  = parseInt(WIDTH);
     let height = parseInt(HEIGHT);
@@ -569,7 +754,7 @@ function render(gl) {
         break;
     case projection.PERSPECTIVE:
         proj = Matrix.perspective({
-            fovy: Radians.fromDegrees(60),
+            fovy: Radians.fromDegrees(PERSPECTIVE_FOVY),
             aspect: width / height,
             near: 1,
             far: 1000
@@ -605,13 +790,13 @@ function render(gl) {
 
         switch (SHADING) {
         case shading.FLAT:
-            render_flat(gl, model, color, world, view, proj, CAMERA_EYE, lights);
+            render_flat(gl, model, color, world, CAMERA, proj, lights);
             break;
         case shading.GOURAUD:
-            render_gouraud(gl, model, color, world, view, proj, CAMERA_EYE, lights);
+            render_gouraud(gl, model, color, world, CAMERA, proj, lights);
             break;
         case shading.PHONG:
-            render_phong(gl, model, color, world, view, proj, CAMERA_EYE, lights);
+            render_phong(gl, model, color, world, CAMERA, proj, lights);
             break;
         case shading.NORMAL:
             render_normal(gl, model, world, view, proj);
@@ -656,11 +841,7 @@ function picking_render(gl) {
         world   = world.translate(vec);
     }
 
-    let view = Matrix.lookAt({
-        eye:     CAMERA_EYE,
-        center:  CAMERA_CENTER,
-        up:      CAMERA_UP
-    });
+    let view = CAMERA.getView();
 
     let width  = parseInt(WIDTH);
     let height = parseInt(HEIGHT);
@@ -679,7 +860,7 @@ function picking_render(gl) {
         break;
     case projection.PERSPECTIVE:
         proj = Matrix.perspective({
-            fovy: Radians.fromDegrees(60),
+            fovy: Radians.fromDegrees(PERSPECTIVE_FOVY),
             aspect: width / height,
             near: 1,
             far: 1000
@@ -696,6 +877,6 @@ function picking_render(gl) {
 
     MODELS.mapVisible(function(i, model) {
         let color = TRUE_BLACK.copy().setAlpha((255 - (i + 1)) / 255);
-        render_flat(gl, model, color, world, view, proj, CAMERA_EYE, lights);
+        render_flat(gl, model, color, world, CAMERA, proj, lights);
     });
 }

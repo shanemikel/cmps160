@@ -24,13 +24,13 @@
 #include "body-start.htm"
 
 <div id="controls-top" class="controls">
-  <div class="tab-labels" data-default="view">
+  <div class="tab-labels" data-default="world">
     <label for="model" data-disabled="disabled">Model</label>
     <label for="editor">Editor</label>
-    <label for="view">View</label>
+    <label for="world">World</label>
     <label for="lighting">Lighting</label>
     <label for="shading">Shading</label>
-    <label for="animation" data-disabled="disabled">Animation</label>
+    <label for="animation">Animation</label>
   </div>
   <div id="model" class="tab">
     <div class="group">
@@ -131,7 +131,7 @@
       </span>
     </div>
   </div>
-  <div id="view" class="tab">
+  <div id="world" class="tab">
     <div class="group">
       <span class="group align">
 	Rotate
@@ -262,6 +262,11 @@
     </form>
   </div>
   <div id="animation" class="tab">
+    <div class="group">
+      <button id="animate-rotate-about">Rotate Around Selection</button>
+      <button id="animate-shake">Shake Camera</button>
+      <button id="animate-stretch">Stretch Scene</button>
+    </div>
   </div>
 </div>
 
