@@ -59,17 +59,17 @@ Cube.prototype = {
 
     toSquares: function() {
         let res    = [];
-        let delte  = this.side / 2;
+        let delta  = this.side / 2;
         let center = this.center;
 
-        res.push(center.plus(new Vector(-delta, -delta, -delta)));
-        res.push(center.plus(new Vector(-delta, -delta,  delta)));
-        res.push(center.plus(new Vector(-delta,  delta, -delta)));
-        res.push(center.plus(new Vector(-delta,  delta,  delta)));
-        res.push(center.plus(new Vector( delta, -delta, -delta)));
-        res.push(center.plus(new Vector( delta, -delta,  delta)));
-        res.push(center.plus(new Vector( delta,  delta, -delta)));
-        res.push(center.plus(new Vector( delta,  delta,  delta)));
+        res.push(center.add(new Vector(-delta, -delta, -delta)));
+        res.push(center.add(new Vector(-delta, -delta,  delta)));
+        res.push(center.add(new Vector(-delta,  delta, -delta)));
+        res.push(center.add(new Vector(-delta,  delta,  delta)));
+        res.push(center.add(new Vector( delta, -delta, -delta)));
+        res.push(center.add(new Vector( delta, -delta,  delta)));
+        res.push(center.add(new Vector( delta,  delta, -delta)));
+        res.push(center.add(new Vector( delta,  delta,  delta)));
 
         return res;
     },
@@ -80,8 +80,42 @@ Cube.prototype = {
             indices:  []
         };
 
+        let range = function(start, span, stride, stop) {
+            let result = [];
+            for (let i = start; i < stop; i += span + stride) {
+                for (let j = 0; j < span; j++)
+                    result.push(i + j);
+            }
+            return result;
+        };
+
+        let quadToTrigs1 = function(quad) {
+            return [quad[0], quad[1], quad[2], quad[2], quad[1], quad[3]];
+        };
+        let quadToTrigs2 = function(quad) {
+            return [quad[0], quad[2], quad[1], quad[1], quad[2], quad[3]];
+        };
+
+        let left   = range(0, 4, 0, 4);
+        let right  = range(4, 4, 0, 8);
+        let bottom = range(0, 2, 2, 8);
+        let top    = range(2, 2, 2, 8);
+        let back   = range(0, 1, 1, 8);
+        let front  = range(1, 1, 1, 8);
+
+        obj.indices = obj.indices.concat(quadToTrigs2(left));
+        obj.indices = obj.indices.concat(quadToTrigs1(right));
+        obj.indices = obj.indices.concat(quadToTrigs1(bottom));
+        obj.indices = obj.indices.concat(quadToTrigs2(top));
+        obj.indices = obj.indices.concat(quadToTrigs2(back));
+        obj.indices = obj.indices.concat(quadToTrigs1(front));
+
+        return obj;
     },
 };
+
+Cube.SHADERS = SHADER_CFG.SHADERS.PHONG;
+Cube.NORMALS = SHADER_CFG.NORMALIZE.FLAT;
 
 
 let Circle = function(center, radius) {
@@ -146,6 +180,7 @@ Circle.prototype = {
             vertices: [this.center.copy()].concat(this.toPolygon(sides)),
             indices:  [],
         };
+
         for (let i = 1; i < obj.vertices.length; i++) {
             let i2 = i + 1;
             if (i2 == obj.vertices.length)
@@ -266,6 +301,9 @@ Sphere.prototype = {
         return obj;
     },
 };
+
+Sphere.SHADERS = SHADER_CFG.SHADERS.PHONG;
+Sphere.NORMALS = SHADER_CFG.NORMALIZE.AVERAGE;
 
 let Cylinder = function(end1, end2, radius, color) {
     this.end1 = end1.copy();
@@ -410,13 +448,18 @@ Cylinder.prototype = {
 
 let Model = function(name, indices, vertices, args) {
     args = $.extend({
-        color: WHITE,
-        show:  true
+        color:   WHITE,
+        show:    true,
+        shaders: SHADER_CFG.SHADERS.PHONG,
+        normals: SHADER_CFG.NORMALIZE.FLAT
     }, args);
 
     this.name     = name.slice();
     this.indices  = indices.slice();
     this.vertices = vertices.slice();
+
+    this.shaders = args.shaders;
+    this.normals = args.normals;
 
     this.rotateX = 0;
     this.rotateY = 0;
@@ -512,9 +555,9 @@ Model.prototype = {
     getXForm: function() {
         let xform = new Matrix();
 
-        xform = xform.rotateX(this.rotateX);
-        xform = xform.rotateY(this.rotateY);
-        xform = xform.rotateZ(this.rotateZ);
+        xform = xform.rotateX(Radians.fromDegrees(this.rotateX));
+        xform = xform.rotateY(Radians.fromDegrees(this.rotateY));
+        xform = xform.rotateZ(Radians.fromDegrees(this.rotateZ));
 
         let scaleVec = new Vector(this.scaleX, this.scaleY, this.scaleZ);
         xform        = xform.scale(scaleVec);

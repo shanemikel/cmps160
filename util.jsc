@@ -95,8 +95,51 @@ function clear(gl, color) {
 }
 
 
-let render_flat    = render_obj(flat_and_gouraud_shaders(), normalize_obj_flat);
-let render_gouraud = render_obj(flat_and_gouraud_shaders(), normalize_obj_average);
+let SHADER_CFG = {
+    NORMALIZE: {
+        FLAT:    1,
+        AVERAGE: 2
+    },
+    SHADERS: {
+        GOURAUD: 1,
+        PHONG:   2
+    }
+};
+
+function renderFn(config) {
+    let normalizeFn;
+
+    switch (config.normals) {
+    case SHADER_CFG.NORMALIZE.FLAT:
+        normalizeFn = normalize_obj_flat;
+        break;
+    case SHADER_CFG.NORMALIZE.AVERAGE:
+        normalizeFn = normalize_obj_average;
+        break;
+    }
+
+    let shaders;
+
+    switch (config.shaders) {
+    case SHADER_CFG.SHADERS.GOURAUD:
+        shaders = gouraud_shaders();
+        break;
+    case SHADER_CFG.SHADERS.PHONG:
+        shaders = phong_shaders();
+        break;
+    }
+
+    return render_obj(shaders, normalizeFn);
+}
+
+function render_model(gl, model, world, camera, projection, lights) {
+    return renderFn(model)(
+        gl, model, model.getColor(), world, camera, projection, lights
+    );
+}
+
+let render_flat    = render_obj(phong_shaders(), normalize_obj_flat);
+let render_gouraud = render_obj(gouraud_shaders(), normalize_obj_average);
 let render_phong   = render_obj(phong_shaders(), normalize_obj_average);
 
 function phong_shaders() {
@@ -171,7 +214,7 @@ function phong_shaders() {
     return {vert: vert, frag: frag};
 }
 
-function flat_and_gouraud_shaders() {
+function gouraud_shaders() {
     let vert = `#version 100
         attribute vec4 a_Position;
         attribute vec4 a_Normal;
@@ -241,7 +284,7 @@ function flat_and_gouraud_shaders() {
 }
 
 function render_obj(shaders, normalize_fn) {
-    return function(gl, obj, color, world, camera, projection, lights) {
+    return function(gl, model, color, world, camera, projection, lights) {
         let vert    = shaders.vert;
         let frag    = shaders.frag;
 
@@ -300,7 +343,7 @@ function render_obj(shaders, normalize_fn) {
             specular_light = SpecularLight.neutral();
         let sl_pow         = specular_light.getPower();
 
-        gl.uniformMatrix4fv(u_Model, false, world.multiply(obj.getXForm()).flatten());
+        gl.uniformMatrix4fv(u_Model, false, world.multiply(model.getXForm()).flatten());
         gl.uniformMatrix4fv(u_View, false, camera.getView().flatten());
         gl.uniformMatrix4fv(u_Projection, false, projection.flatten());
 
@@ -318,11 +361,11 @@ function render_obj(shaders, normalize_fn) {
         gl.uniform3f(u_CameraPosition, cameraPos.x, cameraPos.y, cameraPos.z);
         gl.uniform1f(u_SpecularPower, sl_pow);
 
-        let count = obj.indices.length;
-        obj       = normalize_fn(obj);
+        let count = model.indices.length;
+        model     = normalize_fn(model);
 
-        let vertices = Vector.flatten(obj.vertices);
-        let normals  = Vector.flatten(obj.normals);
+        let vertices = Vector.flatten(model.vertices);
+        let normals  = Vector.flatten(model.normals);
 
         let buffer = {
             vertices: gl.createBuffer(),

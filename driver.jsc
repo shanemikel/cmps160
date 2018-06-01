@@ -36,7 +36,7 @@ let FOCUSED        = null;
 
 let CAMERA;
 {
-    let EYE        = new Vector(0, 0, 350);
+    let EYE        = new Vector(0, 0, 400);
     let FRONT      = ORIGIN.sub(EYE);
     let UP         = new Vector(0, 1,   0);
     CAMERA         = new Camera(EYE, FRONT, UP);
@@ -47,14 +47,16 @@ let AMBIANT_COLOR  = TRUE_WHITE.scale(0.15);
 let DIRECT_X       = 0;
 let DIRECT_Y       = -100;
 let DIRECT_Z       = -100;
-let DIRECT_COLOR   = TRUE_WHITE.scale(0.8);
+let DIRECT_COLOR   = TRUE_WHITE.scale(0.6);
 
-let POINT_X        = 250;
-let POINT_Y        = 150;
-let POINT_Z        = 250;
-let POINT_COLOR    = TRUE_WHITE.scale(0.8);
+let SHOW_POINT     = true;
 
-let SPECULAR_POWER = 12;
+let POINT_X        = 150;
+let POINT_Y        = 10;
+let POINT_Z        = 80;
+let POINT_COLOR    = TRUE_WHITE;
+
+let SPECULAR_POWER = 32;
 
 let TABS           = [];
 let TAB_COUNTER    = 0;
@@ -66,9 +68,9 @@ let light = {
     SPECULAR: 'light-specular'
 };
 let LIGHT = {
-    ambiant:  true,
-    direct:   false,
-    point:    true,
+    ambiant:  false,
+    direct:   true,
+    point:    false,
     specular: true
 };
 
@@ -81,6 +83,7 @@ let projection = {
 let PROJECTION = projection.PERSPECTIVE;
 
 let shading = {
+    MODEL:          'shading-model',
     FLAT:           'shading-flat',
     GOURAUD:        'shading-gouraud',
     PHONG:          'shading-phong',
@@ -90,7 +93,7 @@ let shading = {
     EDGE_SELECTION: 'shading-edge-selection',
     RED_CYAN:       'shading-red-cyan'
 };
-let SHADING = shading.PHONG;
+let SHADING = shading.MODEL;
 
 let shape = {
     CYLINDER: 'shape-cylinder',
@@ -249,12 +252,6 @@ function end_animation(buttonID) {
     enable_tabs();
 }
 
-function do_animation(callback) {
-    begin_animation();
-    callback();
-    end_animation();
-}
-
 
 function main() {
     init();
@@ -310,22 +307,41 @@ function start(gl) {
     });
     select_model(gl, null);
 
-    {
-        let sphere   = (new Sphere(ORIGIN, 100)).toTriangles(50, 50);
-        let mySphere = new Model('My Sphere 1', sphere.indices, sphere.vertices, {
-            color: new RGBColor(0.2, 0.2, 1.0)
-        });
+    // {
+    //     let sphere   = (new Sphere(ORIGIN, 100)).toTriangles(50, 50);
+    //     let mySphere = new Model('My Sphere 1', sphere.indices, sphere.vertices, {
+    //         color:   new RGBColor(0.2, 0.2, 1.0),
+    //         shaders: Sphere.SHADERS,
+    //         normals: Sphere.NORMALS
+    //     });
 
-        MODELS.insert(mySphere);
-    }
-    {
-        let sphere   = (new Sphere(ORIGIN, 40)).toTriangles(50, 50);
-        let mySphere = new Model('My Sphere 2', sphere.indices, sphere.vertices, {
-            color: new RGBColor(0.2, 1.0, 0.2)
-        });
-        mySphere.setTranslateX(200);
+    //     MODELS.insert(mySphere);
+    // }
+    // {
+    //     let sphere   = (new Sphere(ORIGIN, 40)).toTriangles(50, 50);
+    //     let mySphere = new Model('My Sphere 2', sphere.indices, sphere.vertices, {
+    //         color:   new RGBColor(0.2, 1.0, 0.2),
+    //         shaders: Sphere.SHADERS,
+    //         normals: Sphere.NORMALS
+    //     });
+    //     mySphere.setTranslateX(200);
 
-        MODELS.insert(mySphere);
+    //     MODELS.insert(mySphere);
+    // }
+    {
+        // let cube   = (new Cube(ORIGIN, 50)).toTriangles();
+        let cube   = (new Cube(ORIGIN, 150)).toTriangles();
+        let myCube = new Model('My Cube 1', cube.indices, cube.vertices, {
+            color:   new RGBColor(1.0, 0.2, 0.2),
+            shaders: Cube.SHADERS,
+            normals: Cube.NORMALS
+        });
+        myCube.setRotateY(60);
+        myCube.setScaleY(1.8);
+        // myCube.setTranslateX(125);
+        // myCube.setTranslateY(100);
+
+        MODELS.insert(myCube);
     }
 
     CANVAS.mousedown(function(e) {
@@ -341,7 +357,10 @@ function start(gl) {
 
             picking_render(gl);
             gl.readPixels(mouse.x, mouse.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, result);
+
+#ifdef DEBUG
             console.log('Alpha-picking pixel color:', result);
+#endif
 
             let i = 255 - (result[3] + 1);
             if (i < 0) {
@@ -366,7 +385,9 @@ function start(gl) {
             FOCUSED = null;
         } else {
             FOCUSED = i;
+#ifdef DEBUG
             console.log('Focused model:', FOCUSED);
+#endif
         }
         render(gl);
     });
@@ -375,7 +396,9 @@ function start(gl) {
         if ($(e.target).is('input'))
             return;
         
+#ifdef DEBUG
         console.log('Received keypress:', event.which);
+#endif
 
         switch (e.keyCode) {
         case KEYS.y:
@@ -394,11 +417,15 @@ function start(gl) {
 
         case KEYS.i:
             PERSPECTIVE_FOVY -= 5;
+#ifdef DEBUG
             console.log('Camera FOV-Y:', PERSPECTIVE_FOVY);
+#endif
             break;
         case KEYS.o:
             PERSPECTIVE_FOVY += 5;
+#ifdef DEBUG
             console.log('Camera FOV-Y:', PERSPECTIVE_FOVY);
+#endif
             break;
 
         case KEYS.j:
@@ -423,9 +450,11 @@ function start(gl) {
             break;
         }
 
+#ifdef DEBUG
         console.log('CAMERA.eye:', CAMERA.getEye());
         console.log('CAMERA.front:', CAMERA.getFront());
         console.log('CAMERA.up:', CAMERA.getUp());
+#endif
         render(gl);
     });
 
@@ -525,21 +554,27 @@ function start(gl) {
     $('#animate-rotate-about').click(function() {
         begin_animation('animate-rotate-about');
         setTimeout(function() {
+#ifdef DEBUG
             console.log('Animating...');
+#endif
             end_animation('animate-rotate-about');
         }, 2000);
     });
     $('#animate-shake').click(function() {
         begin_animation('animate-shake');
         setTimeout(function() {
+#ifdef DEBUG
             console.log('Animating...');
+#endif
             end_animation('animate-shake');
         }, 2000);
     });
     $('#animate-stretch').click(function() {
         begin_animation('animate-stretch');
         setTimeout(function() {
+#ifdef DEBUG
             console.log('Animating...');
+#endif
             end_animation('animate-stretch');
         }, 2000);
     });
@@ -553,7 +588,10 @@ function select_model(gl, i) {
     if (i < 0)
         i = null;
     SELECTED = i;
+
+#ifdef DEBUG
     console.log('Selected model:', SELECTED);
+#endif
 
     let width  = parseInt(WIDTH);
     let height = parseInt(HEIGHT);
@@ -572,6 +610,18 @@ function select_model(gl, i) {
 
         $('div#editor input[type=range]').prop('disabled', true);
     } else {
+        let model_angle_slider = function(getterName, setterName, sliderID) {
+            init_angle_slider(function(value) {
+                let model = MODELS.at(i);
+
+                if (value !== undefined) {
+                    model[setterName](value);
+                } else {
+                    return model[getterName]();
+                }
+            }, sliderID, RENDER);
+        };
+
         let model_space_slider = function(delta, getterName, setterName, sliderID) {
             init_space_slider(delta, function(value) {
                 let model = MODELS.at(i);
@@ -595,6 +645,10 @@ function select_model(gl, i) {
                 }
             }, sliderID, RENDER);
         };
+
+        model_angle_slider('getRotateX', 'setRotateX', 'rotate-model-x');
+        model_angle_slider('getRotateY', 'setRotateY', 'rotate-model-y');
+        model_angle_slider('getRotateZ', 'setRotateZ', 'rotate-model-z');
 
         model_space_slider(width,  'getTranslateX', 'setTranslateX', 'translate-model-x');
         model_space_slider(height, 'getTranslateY', 'setTranslateY', 'translate-model-y');
@@ -785,10 +839,27 @@ function render(gl) {
     else
         lights.specular = null;
 
+    if (SHOW_POINT) {
+        let point      = new Sphere(lights.point.getPosition(), 15);
+        point          = point.toTriangles(50, 50);
+        let pointLight = new Model('Point Light', point.indices, point.vertices, {
+            color: lights.point.getColor()
+        });
+        render_model(gl, pointLight, world, CAMERA, proj, {
+            ambiant:  new AmbiantLight(TRUE_WHITE),
+            direct:   null,
+            point:    null,
+            specular: null
+        });
+    }
+
     MODELS.mapVisible(function(i, model) {
-        let color         = model.getColor();
+        let color = model.getColor();
 
         switch (SHADING) {
+        case shading.MODEL:
+            render_model(gl, model, world, CAMERA, proj, lights);
+            break;
         case shading.FLAT:
             render_flat(gl, model, color, world, CAMERA, proj, lights);
             break;

@@ -10,7 +10,7 @@
 #include "font-awesome.htm"
 #include "jquery.htm"
 
-<meta name="viewport" content="width=device-width" />
+<meta name="viewport" content="width=device-width, initial-scale=0.92" />
 <meta id="g-colors" />
 <meta id="g-webgl" />
 
@@ -236,6 +236,8 @@
     <form id="shading-type">
       <div class="group">
 	Standard
+	<input id="shading-model" name="shading-type" type="radio" />
+	<label for="shading-model">Model</label>
 	<input id="shading-flat" name="shading-type" type="radio" />
 	<label for="shading-flat">Flat</label>
 	<input id="shading-gouraud" name="shading-type" type="radio" />
