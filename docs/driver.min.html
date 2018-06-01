@@ -1,4 +1,4 @@
-<!doctype html><html lang=en><meta charset=utf-8><title>WebGL Demo</title><link href=vendor/normalize-8.0.0.min.css rel=stylesheet><link href=vendor/fonts.css rel=stylesheet><script src=vendor/fontawesome-5.0.10.all.js></script><script src=vendor/jquery-3.3.1.slim.min.js></script><meta name=viewport content="width=device-width"><meta id=g-colors><meta id=g-webgl><link href=driver.min.css rel=stylesheet><body onload=main()><div id=controls-top class=controls><div class=tab-labels data-default=world><label for=model data-disabled=disabled>Model</label>
+<!doctype html><html lang=en><meta charset=utf-8><title>WebGL Demo</title><link href=https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css rel=stylesheet><link href="https://fonts.googleapis.com/css?family=Inconsolata|Roboto+Condensed" rel=stylesheet><script defer src=https://use.fontawesome.com/releases/v5.0.10/js/all.js integrity=sha384-slN8GvtUJGnv6ca26v8EzVaR9DC58QEwsIk9q1QXdCU8Yu8ck/tL/5szYlBbqmS+ crossorigin=anonymous></script><script src=https://code.jquery.com/jquery-3.3.1.slim.min.js integrity="sha256-3edrmyuQ0w65f8gfBsqowzjJe2iM6n0nKciPUp8y+7E=" crossorigin=anonymous></script><meta name=viewport content="width=device-width,initial-scale=.92"><meta id=g-colors><meta id=g-webgl><link href=driver.min.css rel=stylesheet><body onload=main()><div id=controls-top class=controls><div class=tab-labels data-default=world><label for=model data-disabled=disabled>Model</label>
 <label for=editor>Editor</label>
 <label for=world>World</label>
 <label for=lighting>Lighting</label>
@@ -57,6 +57,8 @@
 <label for=light-specular>Specular</label>
 <input id=light-specular-power type=range>
 <label for=light-specular-power></input></span></div></div><div id=shading class=tab><form id=shading-type><div class=group>Standard
+<input id=shading-model name=shading-type type=radio>
+<label for=shading-model>Model</label>
 <input id=shading-flat name=shading-type type=radio>
 <label for=shading-flat>Flat</label>
 <input id=shading-gouraud name=shading-type type=radio>
