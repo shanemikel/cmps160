@@ -295,8 +295,13 @@
 
 <div id="controls-bottom" class="controls" hidden>
   <label for="console">Console</label>
-  <div id="console" class="group"></div>
+  <div id="console"></div>
 </div>
+
+<script type="text/javascript">
+  if (navigator.platform && /iPad/.test(navigator.platform))
+      $('#controls-bottom').prop('hidden', false);
+</script>
 
 #include "webgl-libs.htm"
 

@@ -2,11 +2,13 @@
 #  COPYRIGHT: Shane Pearlman 2018
 #
 
-VENDOR_DIR  = vendor
-ifdef USE_CDN
+DEFINES     = -DVERBOSE
+
+# VENDOR_DIR  = vendor
+# ifdef USE_CDN
 DEFINES    += -DUSE_CDN
 VENDOR_DIR  =
-endif
+# endif
 
 ifdef DEBUG
 DEFINES    += -DDEBUG

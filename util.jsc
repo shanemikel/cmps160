@@ -32,24 +32,40 @@
 
 #define INIT_SHADERS(GL, VERTEX_SHADER, FRAGMENT_SHADER)      \
     if (! initShaders(GL, VERTEX_SHADER, FRAGMENT_SHADER)) {  \
-        console.log('Failed to intialize shaders.');          \
+        error('Failed to intialize shaders.');          \
         return;                                               \
     }
 
 #define GET_ATTRIBUTE(VAR_NAME, GL, SHADER_NAME)                              \
     let VAR_NAME = GL.getAttribLocation(GL.program, SHADER_NAME);             \
     if (VAR_NAME < 0) {                                                       \
-        console.log('Failed to get the storage location of ' + SHADER_NAME);  \
+        error('Failed to get the storage location of ' + SHADER_NAME);  \
         return;                                                               \
     }
 
 #define GET_UNIFORM(VAR_NAME, GL, SHADER_NAME)                                \
     let VAR_NAME = GL.getUniformLocation(GL.program, SHADER_NAME);            \
     if (! VAR_NAME) {                                                         \
-        console.log('Failed to get the storage location of ' + SHADER_NAME);  \
+        error('Failed to get the storage location of ' + SHADER_NAME);  \
         return;                                                               \
     }
 
+
+function log() {
+    console.log.apply(null, arguments);
+
+    let space = '';
+    let msg   = '';
+    for (let i = 0; i < arguments.length; i++) {
+        msg  += space + arguments[i];
+        space = ' ';
+    }
+
+    let d = $('#console');
+    d.append($('<p>').text(msg)).scrollTop(d.prop('scrollHeight'));
+}
+
+let error = log;
 
 function init_range(args) {
     let parse  = args.parse;
@@ -168,7 +184,7 @@ function phong_shaders() {
         }`;
 
     let frag = `#version 100
-        precision mediump float;
+        precision highp float;
 
         uniform vec3  u_AmbiantLightColor;
 
@@ -373,7 +389,7 @@ function render_obj(shaders, normalize_fn) {
             colors:   gl.createBuffer()
         };
         if (! buffer.vertices || ! buffer.normals || ! buffer.colors) {
-            console.log('Failed to create the buffer objects');
+            error('Failed to create the buffer objects');
             return;
         }
 
@@ -528,7 +544,7 @@ function render_normal(gl, obj, world, view, projection) {
         }`;
 
     let frag = `#version 100
-        precision mediump float;
+        precision highp float;
 
         varying vec4 v_Normal;
 
@@ -562,7 +578,7 @@ function render_normal(gl, obj, world, view, projection) {
         normals:  gl.createBuffer()
     };
     if (! buffer.vertices || ! buffer.normals) {
-        console.log('Failed to create the buffer objects');
+        error('Failed to create the buffer objects');
         return;
     }
 
@@ -602,7 +618,7 @@ function render_depth(gl, obj, color, world, view, projection, rangeStart, range
         }`;
 
     let frag = `#version 100
-        precision mediump float;
+        precision highp float;
 
         uniform vec3  u_Color;
 
@@ -650,7 +666,7 @@ function render_depth(gl, obj, color, world, view, projection, rangeStart, range
         vertices: gl.createBuffer()
     };
     if (! buffer.indices || ! buffer.vertices) {
-        console.log('Failed to create the buffer objects');
+        error('Failed to create the buffer objects');
         return;
     }
 
@@ -689,7 +705,7 @@ function render_edge(gl, obj, color, edgeColor, exponent, world, view, projectio
         }`;
 
     let frag = `#version 100
-        precision mediump float;
+        precision highp float;
 
         uniform vec3  u_Color;
         uniform vec3  u_EdgeColor;
@@ -738,7 +754,7 @@ function render_edge(gl, obj, color, edgeColor, exponent, world, view, projectio
         normals:  gl.createBuffer()
     };
     if (! buffer.vertices || ! buffer.normals) {
-        console.log('Failed to create the buffer objects');
+        error('Failed to create the buffer objects');
         return;
     }
 
@@ -796,7 +812,7 @@ function render_vertices(gl, mode, vertices, color) {
         }
     `;
     let FSHADER = `
-        precision mediump float;
+        precision highp float;
         uniform vec4 u_FragColor;
         void main() {
             gl_FragColor = u_FragColor;
@@ -811,7 +827,7 @@ function render_vertices(gl, mode, vertices, color) {
 
     let vertexBuffer = gl.createBuffer();
     if (! vertexBuffer) {
-        console.log('Failed to create the buffer object');
+        error('Failed to create the buffer object');
         return;
     }
 
@@ -868,7 +884,7 @@ function render_points(gl, point_size, vertices, color) {
         }
     `;
     let FSHADER = `
-        precision mediump float;
+        precision highp float;
         uniform vec4 u_FragColor;
         void main() {
             gl_FragColor = u_FragColor;
@@ -885,7 +901,7 @@ function render_points(gl, point_size, vertices, color) {
 
     let vertexBuffer = gl.createBuffer();
     if (! vertexBuffer) {
-        console.log('Failed to create the buffer object');
+        error('Failed to create the buffer object');
         return;
     }
 

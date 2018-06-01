@@ -121,6 +121,8 @@ let KEYS = {
     DOWN:  40
 };
 
+let RKEYS = {};
+
 
 function init() {
     LOAD_CSS_COLOR(WHITE      , '--white')
@@ -162,6 +164,8 @@ function init() {
 
         enable_tabs(e);
     });
+
+    Object.keys(KEYS).forEach((k) => RKEYS[KEYS[k]] = k);
 
     setupIOSOR('file-picker');
 }
@@ -258,7 +262,7 @@ function main() {
 
     let gl = getWebGLContext(CANVAS[0]);
     if (! gl) {
-        console.log('Failed to get the rendering context for WebGL');
+        log('Failed to get the rendering context for WebGL');
         return;
     }
 
@@ -350,16 +354,16 @@ function start(gl) {
             let mouse  = get_mouse_xy(CANVAS, e);
             let result = new Uint8Array(4);
 
-#ifdef DEBUG
+#ifdef VERBOSE
             gl.readPixels(mouse.x, mouse.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, result);
-            console.log('Clicked pixel color:', result);
+            log('Clicked pixel color:', result);
 #endif
 
             picking_render(gl);
             gl.readPixels(mouse.x, mouse.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, result);
 
-#ifdef DEBUG
-            console.log('Alpha-picking pixel color:', result);
+#ifdef VERBOSE
+            log('Alpha-picking pixel color:', result);
 #endif
 
             let i = 255 - (result[3] + 1);
@@ -384,10 +388,11 @@ function start(gl) {
         if (i < 0) {
             FOCUSED = null;
         } else {
-            FOCUSED = i;
-#ifdef DEBUG
-            console.log('Focused model:', FOCUSED);
+#ifdef VERBOSE
+            if (FOCUSED != i)
+                log('Focused model:', i);
 #endif
+            FOCUSED = i;
         }
         render(gl);
     });
@@ -396,8 +401,8 @@ function start(gl) {
         if ($(e.target).is('input'))
             return;
         
-#ifdef DEBUG
-        console.log('Received keypress:', event.which);
+#ifdef VERBOSE
+        log('Received keypress:', e.keyCode, '==>', RKEYS[e.keyCode]);
 #endif
 
         switch (e.keyCode) {
@@ -417,15 +422,11 @@ function start(gl) {
 
         case KEYS.i:
             PERSPECTIVE_FOVY -= 5;
-#ifdef DEBUG
-            console.log('Camera FOV-Y:', PERSPECTIVE_FOVY);
-#endif
+            log('Changed FOV to:', PERSPECTIVE_FOVY);
             break;
         case KEYS.o:
             PERSPECTIVE_FOVY += 5;
-#ifdef DEBUG
-            console.log('Camera FOV-Y:', PERSPECTIVE_FOVY);
-#endif
+            log('Changed FOV to:', PERSPECTIVE_FOVY);
             break;
 
         case KEYS.j:
@@ -450,11 +451,6 @@ function start(gl) {
             break;
         }
 
-#ifdef DEBUG
-        console.log('CAMERA.eye:', CAMERA.getEye());
-        console.log('CAMERA.front:', CAMERA.getFront());
-        console.log('CAMERA.up:', CAMERA.getUp());
-#endif
         render(gl);
     });
 
@@ -552,29 +548,29 @@ function start(gl) {
     });
 
     $('#animate-rotate-about').click(function() {
+#ifdef VERBOSE
+            log('Animating...');
+#endif
         begin_animation('animate-rotate-about');
         setTimeout(function() {
-#ifdef DEBUG
-            console.log('Animating...');
-#endif
             end_animation('animate-rotate-about');
         }, 2000);
     });
     $('#animate-shake').click(function() {
+#ifdef VERBOSE
+            log('Animating...');
+#endif
         begin_animation('animate-shake');
         setTimeout(function() {
-#ifdef DEBUG
-            console.log('Animating...');
-#endif
             end_animation('animate-shake');
         }, 2000);
     });
     $('#animate-stretch').click(function() {
+#ifdef VERBOSE
+            log('Animating...');
+#endif
         begin_animation('animate-stretch');
         setTimeout(function() {
-#ifdef DEBUG
-            console.log('Animating...');
-#endif
             end_animation('animate-stretch');
         }, 2000);
     });
@@ -589,9 +585,7 @@ function select_model(gl, i) {
         i = null;
     SELECTED = i;
 
-#ifdef DEBUG
-    console.log('Selected model:', SELECTED);
-#endif
+    log('Selected model:', SELECTED);
 
     let width  = parseInt(WIDTH);
     let height = parseInt(HEIGHT);
