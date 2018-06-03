@@ -568,7 +568,7 @@ function render_normal(gl, obj, world, view, projection) {
     gl.uniformMatrix4fv(u_Projection, false, projection.flatten());
 
     let count = obj.indices.length;
-    obj       = normalize_obj_average(obj);
+    obj       = normalize_obj_flat(obj);
 
     let vertices = Vector.flatten(obj.vertices);
     let normals  = Vector.flatten(obj.normals);

@@ -42,7 +42,7 @@ let CAMERA;
     CAMERA         = new Camera(EYE, FRONT, UP);
 }
 
-let AMBIANT_COLOR  = TRUE_WHITE.scale(0.15);
+let AMBIANT_COLOR  = TRUE_WHITE.scale(0.1);
 
 let DIRECT_X       = 0;
 let DIRECT_Y       = -100;
@@ -52,11 +52,11 @@ let DIRECT_COLOR   = TRUE_WHITE.scale(0.6);
 let SHOW_POINT     = true;
 
 let POINT_X        = 150;
-let POINT_Y        = 10;
+let POINT_Y        = 50;
 let POINT_Z        = 80;
 let POINT_COLOR    = TRUE_WHITE;
 
-let SPECULAR_POWER = 32;
+let SPECULAR_POWER = 64;
 
 let TABS           = [];
 let TAB_COUNTER    = 0;
@@ -68,9 +68,9 @@ let light = {
     SPECULAR: 'light-specular'
 };
 let LIGHT = {
-    ambiant:  false,
-    direct:   true,
-    point:    false,
+    ambiant:  true,
+    direct:   false,
+    point:    true,
     specular: true
 };
 
